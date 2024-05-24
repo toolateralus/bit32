@@ -8,8 +8,8 @@ mod tests {
         fn test_hlt() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[0]);
-            cpu.cycle();
-
+            cpu.run();
+            
             assert_eq!(cpu.ip, 1);
             assert_eq!((cpu.flags & Cpu::HALT_FLAG), Cpu::HALT_FLAG);
         }
