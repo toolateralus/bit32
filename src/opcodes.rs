@@ -5,38 +5,25 @@ pub enum Opcode {
   Hlt,
   // Move instructions
   // Byte
+  MoveImmRegByte,
   MoveRegRegByte,
   MoveRegMemByte,
   MoveMemMemByte,
   MoveMemRegByte,
   
   // Short
+  MoveImmRegShort,
   MoveRegRegShort,
   MoveRegMemShort,
   MoveMemRegShort,
   MoveMemMemShort,
   
   // Longs
+  MoveImmRegLong,
   MoveRegRegLong,
   MoveRegMemLong,
   MoveMemRegLong,
   MoveMemMemLong,
-  
-  AddByte,
-  AddShort,
-  AddLong,
-  
-  SubByte,
-  SubShort,
-  SubLong,
-  
-  MulByte,
-  MulShort,
-  MulLong,
-  
-  DivByte,
-  DivShort,
-  DivLong,
   
   PushByteImm,
   PushShortImm,
@@ -58,11 +45,28 @@ pub enum Opcode {
   PopShortMem,
   PopLongMem,
   
+  AddByte,
+  AddShort,
+  AddLong,
+  
+  SubByte,
+  SubShort,
+  SubLong,
+  
+  MulByte,
+  MulShort,
+  MulLong,
+  
+  DivByte,
+  DivShort,
+  DivLong,
+  
+
+  
   AndByteImm,
   AndByteReg,
   AndByteMem,
   
-  // NOT YET IMPLEMENTED BELOW
   AndShortImm,
   AndShortReg,
   AndShortMem,
@@ -71,6 +75,12 @@ pub enum Opcode {
   AndLongReg,
   AndLongMem,
   
+  
+  Call,
+  Return,
+  
+  // NOT YET IMPLEMENTED BELOW
+  
   OrByteImm,
   OrByteReg,
   OrByteMem,
@@ -78,6 +88,7 @@ pub enum Opcode {
   OrShortImm,
   OrShortReg,
   OrShortMem,
+  
   
   OrLongImm,
   OrLongReg,

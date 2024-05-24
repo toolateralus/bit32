@@ -104,10 +104,20 @@ impl Cpu {
 
     pub const HALT_FLAG: u8 = 0x01;
     pub fn new() -> Self {
-        return Cpu {
+        let mut cpu = Cpu {
             registers: [0; REGISTERS_COUNT],
             memory: Memory::new(),
         };
+        
+        // TODO: remove this after testing.
+        // just a default stack so we don't have to set it up constantly.
+        let bp = cpu.memory.buffer.len() - 1;
+        cpu.registers[BP] = bp as u32;
+        
+        let sp = bp - 1000;
+        cpu.registers[SP] = sp as u32;
+        
+        return cpu;
     }
 
     pub fn run(&mut self) {
@@ -419,6 +429,25 @@ impl Cpu {
     
     pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
+            
+            Opcode::MoveImmRegByte => {
+                let index = self.next_byte() as usize;
+                let value = self.next_byte();
+                self.validate_register(index);
+                self.registers[index] = value as u32;
+            }
+            Opcode::MoveImmRegLong => {
+                let index = self.next_byte() as usize;
+                let value = self.next_long();
+                self.validate_register(index);
+                self.registers[index] = value;
+            }
+            Opcode::MoveImmRegShort => {
+                let index = self.next_byte() as usize;
+                let value = self.next_short();
+                self.validate_register(index);
+                self.registers[index] = value as u32;
+            }
             Opcode::MoveRegRegLong => {
                 let dest = self.next_byte() as usize;
                 let src = self.next_byte() as usize;
@@ -536,8 +565,25 @@ impl Cpu {
             | Opcode::MoveMemMemLong
             | Opcode::MoveMemRegByte
             | Opcode::MoveMemMemByte
+            | Opcode::MoveImmRegLong
+            | Opcode::MoveImmRegShort 
+            | Opcode::MoveImmRegByte
             | Opcode::MoveRegMemByte => {
                 self.mov(&opcode);
+            }
+            
+            Opcode::Call => {
+                let addr = self.next_long();
+                // push ret addr
+                self.memory.set_long(self.sp(), self.ip() as u32);
+                self.dec_sp(4);
+                
+                self.registers[IP] = addr;
+            }
+            Opcode::Return => {
+                self.inc_sp(4);
+                let addr = self.memory.long(self.sp());
+                self.registers[IP] = addr;
             }
             
             Opcode::AndShortImm | Opcode::AndShortReg | Opcode::AndShortMem |

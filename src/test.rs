@@ -569,10 +569,60 @@ mod tests {
         }
     }
     
+    mod control_flow_tests {
+        use crate::{cpu::Cpu, opcodes::Opcode};
+
+        #[test]
+        fn test_call() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_byte(100, Opcode::Hlt as u8);
+            cpu.load_program(&[Opcode::Call as u8, 100]);
+            cpu.run();
+            assert_eq!(cpu.ip(), 101);
+        }
+        #[test]
+        fn test_return() {
+            let mut cpu = Cpu::new();
+            // 1 cycle in routine
+            cpu.memory.set_byte(100, Opcode::Return as u8);
+            
+            // call 1 cycle
+            // long addr : 4 cycles
+            // halt on return 1 cycle
+            // ip is 0 indexed so ends on 6 cycles.
+            cpu.load_program(&[Opcode::Call as u8, 100, 0, 0 ,0, 0]);
+            cpu.run();
+            assert_eq!(cpu.ip(), 6)
+        }
+        
+    }
+    
     
     mod mov_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
-
+        
+        #[test] 
+        fn test_mov_reg_imm_byte() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmRegByte as u8, 0, 100]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 100);
+        }
+        #[test] 
+        fn test_mov_reg_imm_short() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmRegShort as u8, 0, 0xFF, 0xFF]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 0xFFFF);
+        }
+        #[test] 
+        fn test_mov_reg_imm_long() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmRegLong as u8, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 0xFFFFFFFF);
+        }
+        
         #[test]
         fn test_mov_reg_reg_byte() {
             let mut cpu = Cpu::new();
