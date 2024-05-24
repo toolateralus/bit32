@@ -111,6 +111,87 @@ mod tests {
             assert_eq!(cpu.memory.long(expected_sp), 0xFF_FF_FF_FF);
         }
         
+        
+        #[test]
+        fn test_pop_byte_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 1;
+            cpu.memory.set_byte(cpu.sp(), 100);
+            
+            cpu.load_program(&[Opcode::PopByteReg as u8, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
+        
+        #[test]
+        fn test_pop_byte_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 1;
+            cpu.memory.set_byte(cpu.sp(), 100);
+            cpu.memory.set_byte(100, 0xFF);
+            
+            cpu.load_program(&[Opcode::PopByteMem as u8, 100]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.byte(100), 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
+        
+        #[test]
+        fn test_pop_short_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 2;
+            cpu.memory.set_short(cpu.sp(), 100);
+            
+            cpu.load_program(&[Opcode::PopShortReg as u8, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
+        
+        #[test]
+        fn test_pop_short_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 2;
+            cpu.memory.set_short(cpu.sp(), 100);
+            cpu.memory.set_short(100, 0xFF_FF);
+            
+            cpu.load_program(&[Opcode::PopShortMem as u8, 100]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.short(100), 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
+        
+        #[test]
+        fn test_pop_long_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 4;
+            cpu.memory.set_long(cpu.sp(), 100);
+            
+            cpu.load_program(&[Opcode::PopLongReg as u8, 0, 0, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
+        
+        #[test]
+        fn test_pop_long_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp() + 4;
+            cpu.memory.set_long(cpu.sp(), 100);
+            cpu.memory.set_long(100, 0xFF_FF_FF_FF);
+            
+            cpu.load_program(&[Opcode::PopLongMem as u8, 100, 0, 0, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.long(100), 100);
+            assert_eq!(cpu.sp(), expected_sp);
+        }
     }
     
     mod general_tests {
