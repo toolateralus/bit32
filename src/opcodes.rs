@@ -22,10 +22,22 @@ pub enum Opcode {
   MoveMemRegLong,
   MoveMemMemLong,
   
-  Add,
-  Sub,
-  Mul,
-  Div,
+  AddByte,
+  AddShort,
+  AddLong,
+  
+  SubByte,
+  SubShort,
+  SubLong,
+  
+  MulByte,
+  MulShort,
+  MulLong,
+  
+  DivByte,
+  DivShort,
+  DivLong,
+  
   Nop,
 }
 

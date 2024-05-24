@@ -58,7 +58,6 @@ pub struct Cpu {
     pub sp: usize,
     pub flags: u8,
 }
-
 impl Debug for Cpu {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cpu")
@@ -70,7 +69,6 @@ impl Debug for Cpu {
             .finish()
     }
 }
-
 impl Cpu {
     pub const HALT_FLAG: u8 = 0x01;
     pub fn new() -> Self {
@@ -83,14 +81,15 @@ impl Cpu {
             flags: 0,
         };
     }
-    
+
     pub fn run(&mut self) {
         while (self.flags & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             self.cycle();
         }
     }
+    
+    
 }
-
 impl Cpu {
     pub fn validate_register(&self, reg: usize) {
         if reg >= self.registers.len() {
@@ -104,9 +103,112 @@ impl Cpu {
     }
 }
 impl Cpu {
-    pub fn mov(&mut self, opcode : Opcode) {
+    
+    pub fn arith_long(&mut self, opcode: Opcode)  {
         match opcode {
-            
+            Opcode::AddLong => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::SubLong => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::DivLong => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient;
+                self.registers[1] = remainder;
+            }
+            Opcode::MulLong => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = result;
+            }
+            _ => {
+                panic!("invalid long arith instruction");
+            }
+        }
+    }
+    
+    
+    pub fn arith_short(&mut self, opcode: Opcode) {
+        match opcode {
+            Opcode::AddShort => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let rhs = self.next_short();
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::SubShort => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let rhs = self.next_short();
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::DivShort => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let rhs = self.next_short();
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::MulShort => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let rhs = self.next_short();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            _ => {
+                panic!("invalid short arith instruction");
+            }
+        }
+    }
+    
+    pub fn arith_byte(&mut self, opcode: Opcode) {
+        match opcode {
+            Opcode::AddByte => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let rhs = self.next_byte();
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::SubByte => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let rhs = self.next_byte();
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::DivByte => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let rhs = self.next_byte();
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::MulByte => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let rhs = self.next_byte();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            _ => {
+                panic!("invalid byte arith instruction");
+            }
+        }
+    }
+
+    pub fn mov(&mut self, opcode: Opcode) {
+        match opcode {
             Opcode::MoveRegRegLong => {
                 let dest = self.next_byte() as usize;
                 let src = self.next_byte() as usize;
@@ -117,7 +219,7 @@ impl Cpu {
                 let dest = self.next_byte() as usize;
                 let src = self.next_byte() as usize;
                 self.validate_registers(&[dest, src]);
-                self.registers[dest] = self.registers[src] & 0xFF; 
+                self.registers[dest] = self.registers[src] & 0xFF;
             }
             Opcode::MoveRegRegShort => {
                 let dest = self.next_byte() as usize;
@@ -141,7 +243,7 @@ impl Cpu {
                 let value = self.memory.short(src);
                 self.memory.set_short(dest, value);
             }
-            
+
             Opcode::MoveRegMemLong => {
                 let dest = self.next_long() as usize;
                 let src = self.next_byte() as usize;
@@ -158,7 +260,7 @@ impl Cpu {
                 let value = self.memory.long(src);
                 self.memory.set_long(dest, value);
             }
-            
+
             Opcode::MoveMemRegByte => {
                 let dest = self.next_byte() as usize;
                 let src = self.next_long() as usize;
@@ -181,7 +283,6 @@ impl Cpu {
         }
     }
 }
-
 impl Cpu {
     pub fn next_byte(&mut self) -> u8 {
         let b = self.memory.byte(self.ip);
@@ -199,33 +300,42 @@ impl Cpu {
         return (high << 16) | low;
     }
 }
-
 impl Cpu {
-    pub fn load_program(&mut self, program: &[u8]) { 
+    pub fn load_program(&mut self, program: &[u8]) {
         let iter = program.iter().cloned();
         self.memory.buffer.splice(0..program.len(), iter);
     }
-    
+
     pub fn cycle(&mut self) {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
-        
+
         match opcode {
-            Opcode::MoveRegRegLong |
-            Opcode::MoveRegRegByte |
-            Opcode::MoveRegRegShort |
-            Opcode::MoveRegMemShort |
-            Opcode::MoveMemRegShort |
-            Opcode::MoveMemMemShort |
-            Opcode::MoveRegMemLong |
-            Opcode::MoveMemRegLong |
-            Opcode::MoveMemMemLong |
-            Opcode::MoveMemRegByte |
-            Opcode::MoveMemMemByte |
-            Opcode::MoveRegMemByte => {
+            Opcode::MoveRegRegLong
+            | Opcode::MoveRegRegByte
+            | Opcode::MoveRegRegShort
+            | Opcode::MoveRegMemShort
+            | Opcode::MoveMemRegShort
+            | Opcode::MoveMemMemShort
+            | Opcode::MoveRegMemLong
+            | Opcode::MoveMemRegLong
+            | Opcode::MoveMemMemLong
+            | Opcode::MoveMemRegByte
+            | Opcode::MoveMemMemByte
+            | Opcode::MoveRegMemByte => {
                 self.mov(opcode);
             }
-            
+
+            Opcode::AddByte | Opcode::DivByte | Opcode::MulByte | Opcode::SubByte => {
+                self.arith_byte(opcode);
+            }
+            Opcode::AddShort | Opcode::DivShort | Opcode::MulShort | Opcode::SubShort => {
+                self.arith_short(opcode);
+            }
+            Opcode::AddLong | Opcode::DivLong | Opcode::MulLong | Opcode::SubLong => {
+                self.arith_long(opcode);
+            }
+
             Opcode::Hlt => {
                 self.flags |= Cpu::HALT_FLAG;
             }
