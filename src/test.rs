@@ -2,18 +2,18 @@
 mod tests {
     
     mod stack_tests {
-        use crate::{cpu::Cpu, opcodes::Opcode};
+        use crate::{cpu::{Cpu, SP}, opcodes::Opcode};
         
         fn create_cpu() -> Cpu {
             let mut cpu = Cpu::new();
-            cpu.sp = 50;
+            cpu.registers[SP] = 50;
             return cpu;
         }
         
         #[test]
         fn test_push_byte_reg() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 1;
+            let expected_sp = cpu.sp() - 1;
             
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::PushByteReg as u8, 0]);
@@ -24,7 +24,7 @@ mod tests {
         #[test]
         fn test_push_byte_imm() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 1;
+            let expected_sp = cpu.sp() - 1;
             
             cpu.load_program(&[Opcode::PushByteImm as u8, 100]);
             cpu.run();
@@ -34,7 +34,7 @@ mod tests {
         #[test]
         fn test_push_byte_mem() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 1;
+            let expected_sp = cpu.sp() - 1;
             cpu.memory.set_byte(100, 0xFF);
             
             cpu.load_program(&[Opcode::PushByteMem as u8, 100]);
@@ -46,7 +46,7 @@ mod tests {
         #[test]
         fn test_push_short_reg() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 2;
+            let expected_sp = cpu.sp() - 2;
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::PushShortReg as u8, 0]);
             cpu.run();
@@ -57,7 +57,7 @@ mod tests {
         #[test]
         fn test_push_short_imm() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 2;
+            let expected_sp = cpu.sp() - 2;
             cpu.load_program(&[Opcode::PushShortImm as u8, 100, 0]);
             cpu.run();
 
@@ -67,7 +67,7 @@ mod tests {
         #[test]
         fn test_push_short_mem() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 2;
+            let expected_sp = cpu.sp() - 2;
             cpu.memory.set_short(100, 0xFF);
             
             cpu.load_program(&[Opcode::PushShortMem as u8, 100, 0]);
@@ -79,7 +79,7 @@ mod tests {
         #[test]
         fn test_push_long_reg() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 4;
+            let expected_sp = cpu.sp() - 4;
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::PushLongReg as u8, 0, 0, 0]);
             cpu.run();
@@ -90,7 +90,7 @@ mod tests {
         #[test]
         fn test_push_long_imm() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 4;
+            let expected_sp = cpu.sp() - 4;
             cpu.load_program(&[Opcode::PushLongImm as u8, 100, 0, 0, 0]);
             cpu.run();
             
@@ -100,7 +100,7 @@ mod tests {
         #[test]
         fn test_push_long_mem() {
             let mut cpu = create_cpu();
-            let expected_sp = cpu.sp - 4;
+            let expected_sp = cpu.sp() - 4;
             
             cpu.memory.set_long(100, 0xFF_FF_FF_FF);
             
@@ -122,8 +122,8 @@ mod tests {
             cpu.load_program(&[0]);
             cpu.run();
             
-            assert_eq!(cpu.ip, 1);
-            assert_eq!((cpu.flags & Cpu::HALT_FLAG), Cpu::HALT_FLAG);
+            assert_eq!(cpu.ip(), 1);
+            assert_eq!((cpu.flags() & Cpu::HALT_FLAG), Cpu::HALT_FLAG);
         }
     }
 
@@ -407,7 +407,7 @@ mod tests {
             cpu.load_program(&[Opcode::MoveRegRegByte as u8, 0, 1]);
             cpu.run();
             assert_eq!(cpu.registers[0], cpu.registers[1]);
-            assert_eq!(cpu.ip, 4);
+            assert_eq!(cpu.ip(), 4);
         }
         #[test]
         fn test_mov_reg_mem_byte() {
@@ -416,7 +416,7 @@ mod tests {
             cpu.load_program(&[Opcode::MoveRegMemByte as u8, 100, 0]);
             cpu.run();
             assert_eq!(cpu.memory.buffer[100], 10);
-            assert_eq!(cpu.ip, 7)
+            assert_eq!(cpu.ip(), 7)
         }
         #[test]
         fn test_mov_mem_mem_byte() {
@@ -498,7 +498,7 @@ mod tests {
             cpu.registers[0] = 0xDEADBEEF;
             cpu.load_program(&[Opcode::MoveRegMemLong as u8, 255, 1, 0, 0, 0]);
             cpu.run();
-            assert_eq!(cpu.ip, 7);
+            assert_eq!(cpu.ip(), 7);
             assert_eq!(cpu.memory.long(511), 0xDEADBEEF);
         }
         #[test]
