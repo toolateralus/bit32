@@ -38,6 +38,65 @@ pub enum Opcode {
   DivShort,
   DivLong,
   
+  PushByteImm,
+  PushShortImm,
+  PushLongImm,
+  
+  PushByteReg,
+  PushShortReg,
+  PushLongReg,
+  
+  PushByteMem,
+  PushShortMem,
+  PushLongMem,
+  
+  PopByteReg,
+  PopShortReg,
+  PopLongReg,
+  
+  PopByteMem,
+  PopShortMem,
+  PopLongMem,
+  
+  // NOT YET IMPLEMENTED BELOW
+  AndByte,
+  AndShort,
+  AndLong,
+  
+  OrByte,
+  OrShort,
+  OrLong,
+  
+  XorByte,
+  XorShort,
+  XorLong,
+  
+  NotByte,
+  NotShort,
+  NotLong,
+  
+  ShiftLeftByte,
+  ShiftLeftShort,
+  ShiftLeftLong,
+  ShiftRightByte,
+  ShiftRightShort,
+  ShiftRightLong,
+  
+  EqualByte,
+  EqualShort,
+  EqualLong,
+  NotEqualByte,
+  NotEqualShort,
+  NotEqualLong,
+  LessThanByte,
+  LessThanShort,
+  LessThanLong,
+  GreaterThanByte,
+  GreaterThanShort,
+  GreaterThanLong,
+  
+ 
+  
   Nop,
 }
 

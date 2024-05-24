@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 const REGISTERS_COUNT: usize = 16;
 // 100 MiB
-const MEMORY_SIZE: usize = 100 * 1024 * 1024;
+const MEMORY_SIZE: usize = 1 * 1024 * 1024;
 
 #[derive(Debug)]
 pub struct Memory {
@@ -85,6 +85,113 @@ impl Cpu {
     pub fn run(&mut self) {
         while (self.flags & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             self.cycle();
+        }
+    }
+    
+    fn push(&mut self, op: &Opcode) {
+       match op {
+            Opcode::PushByteReg => {
+                self.sp -= 1;
+                let index = self.next_byte() as usize;
+                let value = (self.registers[index] & 0xFF) as u8;
+                self.memory.set_byte(self.sp, value);
+            }
+            Opcode::PushByteMem => {
+                self.sp -= 1;
+                let addr = self.next_long() as usize;
+                let value = self.memory.byte(addr); 
+                self.memory.set_byte(self.sp, value);
+            }
+            Opcode::PushByteImm => {
+                self.sp -= 1;
+                let value = self.next_byte();
+                self.memory.set_byte(self.sp, value);
+            }
+            
+            Opcode::PushShortImm => {
+                self.sp -= 2;
+                let value = self.next_short();
+                self.memory.set_short(self.sp, value);
+            }
+            Opcode::PushShortMem => {
+                self.sp -= 2;
+                let addr = self.next_long() as usize;
+                let value = self.memory.short(addr); 
+                self.memory.set_short(self.sp, value);
+            }
+            Opcode::PushShortReg => {
+                self.sp -= 2;
+                let index = self.next_byte() as usize;
+                let value = (self.registers[index] & 0xFFFF) as u16;
+                self.memory.set_short(self.sp, value);
+            }
+            
+            Opcode::PushLongMem => {
+                self.sp -= 4;
+                let addr = self.next_long() as usize;
+                let value = self.memory.long(addr);
+                self.memory.set_long(self.sp, value);
+            }
+            Opcode::PushLongReg => {
+                self.sp -= 4;
+                let index = self.next_byte() as usize;
+                let value = self.registers[index];   
+                self.memory.set_long(self.sp, value);
+            }
+            Opcode::PushLongImm => {
+                self.sp -= 4;
+                let value = self.next_long();
+                self.memory.set_long(self.sp, value);
+            }
+            _ => {
+                panic!("invalid push");
+            }
+       } 
+        
+        
+    }
+    
+    fn pop(&mut self, op: &Opcode) {
+        match op {
+            Opcode::PopByteReg => {
+                let dest = self.next_byte() as usize;
+                let value = self.memory.byte(self.sp);
+                self.sp += 1;
+                self.registers[dest] = value as u32;
+            }
+            Opcode::PopByteMem => {
+                let addr = self.next_long() as usize;
+                let value = self.memory.byte(self.sp);
+                self.memory.set_byte(addr, value);
+                self.sp += 1;
+            }
+            Opcode::PopShortReg => {
+                let dest = self.next_byte() as usize;
+                let value = self.memory.short(self.sp);
+                self.sp += 2;
+                self.registers[dest] = value as u32;
+            }
+            Opcode::PopShortMem => {
+                let addr = self.next_long() as usize;
+                let value = self.memory.short(self.sp);
+                self.memory.set_short(addr, value);
+                self.sp += 1;
+            }
+            Opcode::PopLongReg => {
+                let dest = self.next_byte() as usize;
+                let value = self.memory.long(self.sp);
+                self.sp += 4;
+                self.registers[dest] = value as u32;
+            }
+            Opcode::PopLongMem => {
+                let addr = self.next_long() as usize;
+                let value = self.memory.long(self.sp);
+                self.memory.set_long(addr, value);
+                self.sp += 1;
+            }
+            _ => {
+                panic!("invalid pop");
+            }
         }
     }
     
@@ -309,7 +416,7 @@ impl Cpu {
     pub fn cycle(&mut self) {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
-
+        
         match opcode {
             Opcode::MoveRegRegLong
             | Opcode::MoveRegRegByte
@@ -335,7 +442,18 @@ impl Cpu {
             Opcode::AddLong | Opcode::DivLong | Opcode::MulLong | Opcode::SubLong => {
                 self.arith_long(opcode);
             }
-
+            
+            Opcode::PushByteMem | Opcode::PushShortMem | Opcode::PushLongMem |
+            Opcode::PushByteReg | Opcode::PushShortReg | Opcode::PushLongReg |
+            Opcode::PushByteImm | Opcode::PushLongImm | Opcode::PushShortImm => {
+                self.push(&opcode);
+            }
+            
+            Opcode::PopLongMem | Opcode::PopShortMem | Opcode::PopByteMem |
+            Opcode::PopByteReg | Opcode::PopShortReg | Opcode::PopLongReg => {
+                self.pop(&opcode);
+            }
+            
             Opcode::Hlt => {
                 self.flags |= Cpu::HALT_FLAG;
             }

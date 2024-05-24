@@ -1,6 +1,118 @@
 #[cfg(test)]
 mod tests {
+    
+    mod stack_tests {
+        use crate::{cpu::Cpu, opcodes::Opcode};
+        
+        fn create_cpu() -> Cpu {
+            let mut cpu = Cpu::new();
+            cpu.sp = 50;
+            return cpu;
+        }
+        
+        #[test]
+        fn test_push_byte_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 1;
+            
+            cpu.registers[0] = 100;
+            cpu.load_program(&[Opcode::PushByteReg as u8, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.byte(expected_sp), 100);
+        }
+        #[test]
+        fn test_push_byte_imm() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 1;
+            
+            cpu.load_program(&[Opcode::PushByteImm as u8, 100]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.byte(expected_sp), 100);
+        }
+        #[test]
+        fn test_push_byte_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 1;
+            cpu.memory.set_byte(100, 0xFF);
+            
+            cpu.load_program(&[Opcode::PushByteMem as u8, 100]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.byte(expected_sp), 0xFF);
+        }
+        
+        #[test]
+        fn test_push_short_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 2;
+            cpu.registers[0] = 100;
+            cpu.load_program(&[Opcode::PushShortReg as u8, 0]);
+            cpu.run();
 
+            assert_eq!(cpu.memory.short(expected_sp), 100);
+        }
+
+        #[test]
+        fn test_push_short_imm() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 2;
+            cpu.load_program(&[Opcode::PushShortImm as u8, 100, 0]);
+            cpu.run();
+
+            assert_eq!(cpu.memory.short(expected_sp), 100);
+        }
+
+        #[test]
+        fn test_push_short_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 2;
+            cpu.memory.set_short(100, 0xFF);
+            
+            cpu.load_program(&[Opcode::PushShortMem as u8, 100, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.short(expected_sp), 0xFF);
+        }
+        
+        #[test]
+        fn test_push_long_reg() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 4;
+            cpu.registers[0] = 100;
+            cpu.load_program(&[Opcode::PushLongReg as u8, 0, 0, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.long(expected_sp), 100);
+        }
+        
+        #[test]
+        fn test_push_long_imm() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 4;
+            cpu.load_program(&[Opcode::PushLongImm as u8, 100, 0, 0, 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.memory.long(expected_sp), 100);
+        }
+        
+        #[test]
+        fn test_push_long_mem() {
+            let mut cpu = create_cpu();
+            let expected_sp = cpu.sp - 4;
+            
+            cpu.memory.set_long(100, 0xFF_FF_FF_FF);
+            
+            cpu.load_program(&[Opcode::PushLongMem as u8, 100, 0, 0, 0]);
+            cpu.run();
+            
+            
+            assert_eq!(cpu.memory.long(expected_sp), 0xFF_FF_FF_FF);
+        }
+        
+    }
+    
     mod general_tests {
         use crate::cpu::Cpu;
 
@@ -272,7 +384,7 @@ mod tests {
             assert_eq!(cpu.registers[0], result);
             assert_eq!(cpu.registers[1], 0);
         }
-
+        
         #[test]
         fn test_div_long_remainder() {
             let mut cpu = Cpu::new();
