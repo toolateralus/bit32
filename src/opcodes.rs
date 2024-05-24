@@ -3,19 +3,25 @@
 #[derive(Debug)]
 pub enum Opcode {
   Hlt,
-  MoveRegRegLong,
-  MoveRegRegShort,
+  // Move instructions
+  // Byte
   MoveRegRegByte,
-  
   MoveRegMemByte,
   MoveMemMemByte,
   MoveMemRegByte,
+  
+  // Short
+  MoveRegRegShort,
   MoveRegMemShort,
   MoveMemRegShort,
+  MoveMemMemShort,
+  
+  // Longs
+  MoveRegRegLong,
   MoveRegMemLong,
   MoveMemRegLong,
-  MoveMemMemShort,
   MoveMemMemLong,
+  
   Add,
   Sub,
   Mul,
