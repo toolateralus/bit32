@@ -75,6 +75,7 @@ impl Debug for Cpu {
             .finish()
     }
 }
+// General
 impl Cpu {
     pub fn flags(&self) -> u8 {
         self.registers[FLAGS] as u8
@@ -115,6 +116,81 @@ impl Cpu {
         }
     }
 }
+
+
+impl Cpu {
+    pub fn and(&mut self, op: &Opcode) {
+        
+        match op  {
+            Opcode::AndByteImm => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let rhs = self.next_byte();
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndByteMem => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndByteReg => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            
+            Opcode::AndShortImm => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let rhs = self.next_short();
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortMem => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortReg => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            
+            Opcode::AndLongImm => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                self.registers[0] = lhs & rhs;
+            }
+            Opcode::AndLongMem => {
+                let lhs = self.registers[0];
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
+                self.registers[0] = lhs & rhs;
+            }
+            Opcode::AndLongReg => {
+                let lhs = self.registers[0];
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                self.registers[0] = lhs & rhs;
+            }
+            _ => {
+                panic!("invalid and instruction");
+            }
+        }
+        
+        
+    }
+    pub fn or(&mut self, op: &Opcode) {
+        
+    }
+    pub fn xor(&mut self, op: &Opcode) {
+        
+    }
+}
+
+// Stack
 impl Cpu {
     fn push(&mut self, op: &Opcode) {
         match op {
@@ -222,6 +298,8 @@ impl Cpu {
         }
     }
 }
+
+// Registers
 impl Cpu {
     pub fn validate_register(&self, reg: usize) {
         if reg >= self.registers.len() {
@@ -234,8 +312,10 @@ impl Cpu {
         }
     }
 }
+
+// Arithmetic & Move
 impl Cpu {
-    pub fn arith_long(&mut self, opcode: Opcode) {
+    pub fn arith_long(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::AddLong => {
                 let lhs = self.registers[0];
@@ -268,8 +348,8 @@ impl Cpu {
             }
         }
     }
-
-    pub fn arith_short(&mut self, opcode: Opcode) {
+    
+    pub fn arith_short(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::AddShort => {
                 let lhs = (self.registers[0] & 0xFFFF) as u16;
@@ -302,8 +382,8 @@ impl Cpu {
             }
         }
     }
-
-    pub fn arith_byte(&mut self, opcode: Opcode) {
+    
+    pub fn arith_byte(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::AddByte => {
                 let lhs = (self.registers[0] & 0xFF) as u8;
@@ -336,8 +416,8 @@ impl Cpu {
             }
         }
     }
-
-    pub fn mov(&mut self, opcode: Opcode) {
+    
+    pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::MoveRegRegLong => {
                 let dest = self.next_byte() as usize;
@@ -413,6 +493,8 @@ impl Cpu {
         }
     }
 }
+
+// Memory utils
 impl Cpu {
     pub fn next_byte(&mut self) -> u8 {
         let b = self.memory.byte(self.ip());
@@ -430,6 +512,8 @@ impl Cpu {
         return (high << 16) | low;
     }
 }
+
+// General, Cycle, Load Program
 impl Cpu {
     pub fn load_program(&mut self, program: &[u8]) {
         let iter = program.iter().cloned();
@@ -453,17 +537,23 @@ impl Cpu {
             | Opcode::MoveMemRegByte
             | Opcode::MoveMemMemByte
             | Opcode::MoveRegMemByte => {
-                self.mov(opcode);
+                self.mov(&opcode);
             }
-
+            
+            Opcode::AndShortImm | Opcode::AndShortReg | Opcode::AndShortMem |
+            Opcode::AndLongImm | Opcode::AndLongReg | Opcode::AndLongMem |
+            Opcode::AndByteImm | Opcode::AndByteReg | Opcode::AndByteMem => {
+                self.and(&opcode)
+            }
+            
             Opcode::AddByte | Opcode::DivByte | Opcode::MulByte | Opcode::SubByte => {
-                self.arith_byte(opcode);
+                self.arith_byte(&opcode);
             }
             Opcode::AddShort | Opcode::DivShort | Opcode::MulShort | Opcode::SubShort => {
-                self.arith_short(opcode);
+                self.arith_short(&opcode);
             }
             Opcode::AddLong | Opcode::DivLong | Opcode::MulLong | Opcode::SubLong => {
-                self.arith_long(opcode);
+                self.arith_long(&opcode);
             }
 
             Opcode::PushByteMem

@@ -58,11 +58,11 @@ pub enum Opcode {
   PopShortMem,
   PopLongMem,
   
-  // NOT YET IMPLEMENTED BELOW
   AndByteImm,
   AndByteReg,
   AndByteMem,
   
+  // NOT YET IMPLEMENTED BELOW
   AndShortImm,
   AndShortReg,
   AndShortMem,
@@ -107,12 +107,29 @@ pub enum Opcode {
   NotLongReg,
   NotLongMem,
   
-  ShiftLeftByte,
-  ShiftLeftShort,
-  ShiftLeftLong,
-  ShiftRightByte,
-  ShiftRightShort,
-  ShiftRightLong,
+  ShiftLeftByteImm,
+  ShiftLeftByteReg,
+  ShiftLeftByteMem,
+  
+  ShiftLeftShortImm,
+  ShiftLeftShortReg,
+  ShiftLeftShortMem,
+  
+  ShiftLeftLongImm,
+  ShiftLeftLongReg,
+  ShiftLeftLongMem,
+  
+  ShiftRightByteImm,
+  ShiftRightByteReg,
+  ShiftRightByteMem,
+  
+  ShiftRightShortImm,
+  ShiftRightShortReg,
+  ShiftRightShortMem,
+  
+  ShiftRightLongImm,
+  ShiftRightLongReg,
+  ShiftRightLongMem,
   
   EqualByte,
   EqualShort,
@@ -126,7 +143,6 @@ pub enum Opcode {
   GreaterThanByte,
   GreaterThanShort,
   GreaterThanLong,
-  
  
   
   Nop,
