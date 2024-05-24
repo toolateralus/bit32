@@ -46,6 +46,13 @@ mod tests {
     cpu.load_program(&[Opcode::MoveRegRegShort as u8, 0, 1]);
     cpu.run();
     assert_eq!(cpu.registers[1], 65535);
+    
+    
+    let mut cpu = Cpu::new();
+    cpu.registers[0] = 65538;
+    cpu.load_program(&[Opcode::MoveRegRegShort as u8, 0, 1]);
+    cpu.run();
+    assert_eq!(cpu.registers[1], 2);
   }
   #[test]
   fn test_mov_reg_reg_long() {
