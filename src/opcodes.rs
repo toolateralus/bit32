@@ -65,7 +65,6 @@ pub enum Opcode {
   AndShortImm,
   AndLongImm,
   
-  
   JumpEqual,
   JumpNotEqual,
   

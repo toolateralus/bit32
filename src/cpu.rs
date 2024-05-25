@@ -1,6 +1,10 @@
+use crossterm::{execute, terminal};
+
+use crate::debug::Debugger;
 use crate::opcodes::Opcode;
+use core::fmt;
 use std::fmt::Debug;
-use std::io::Read;
+use std::io::{stdout, Read};
 
 const REGISTERS_COUNT: usize = 21;
 
@@ -28,9 +32,7 @@ impl Memory {
         };
     }
     pub fn byte(&mut self, addr: usize) -> u8 {
-        if addr >= self.buffer.len() {
-            panic!("memory access out of bounds {addr}");
-        }
+        
         let b = self.buffer[addr];
         return b;
     }
@@ -66,14 +68,14 @@ pub struct Cpu {
     pub memory: Memory,
 }
 impl Debug for Cpu {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Cpu")
-            .field("\nregisters", &self.registers)
-            .field("\nip", &self.ip())
-            .field("\nbp", &self.bp())
-            .field("\nsp", &self.sp())
-            .field("\nflags", &self.flags())
-            .finish()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let registers = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;32m{:?}\x1b[0m", "registers", self.registers);
+        let ip = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;33m{:?}\x1b[0m", "ip", self.ip());
+        let bp = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;34m{:?}\x1b[0m", "bp", self.bp());
+        let sp = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;35m{:?}\x1b[0m", "sp", self.sp());
+        let flags = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;36m{:?}\x1b[0m", "flags", self.flags());
+        
+        write!(f, "Cpu {{\n{},\n{},\n{},\n{},\n{}\n}}", registers, ip, bp, sp, flags)
     }
 }
 // General
@@ -127,7 +129,7 @@ impl Cpu {
         
         // TODO: remove this after testing.
         // just a default stack so we don't have to set it up constantly.
-        let bp = cpu.memory.buffer.len() - 1;
+        let bp = cpu.memory.buffer.len() - 20;
         cpu.registers[BP] = bp as u32;
         
         let sp = bp - 1000;
@@ -135,12 +137,13 @@ impl Cpu {
         
         return cpu;
     }
-
+    
     pub fn run(&mut self) {
         while (self.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             self.cycle();
         }
     }
+   
     
     fn jmp(&mut self) {
         let addr = self.next_long();
@@ -209,7 +212,10 @@ impl Cpu {
 }
 
 
+
 impl Cpu {
+    
+    
     pub fn and(&mut self, op: &Opcode) {
         
         match op  {
@@ -588,6 +594,39 @@ impl Cpu {
 
 // General, Cycle, Load Program
 impl Cpu {
+    pub fn reg_index_to_str(index: &usize) -> &str {
+        match index {
+            0 => "rax",
+            1 => "rbx",
+            2 => "rcx",
+            3 => "rdx",
+            4 => "rex",
+            5 => "rfx",
+            6 => "rgx",
+            7 => "rhx",
+            8 => "rzx",
+            9 => "rwx",
+            
+            10 => "r9",
+            11 => "r10",
+            12 => "r11",
+            13 => "r12",
+            14 => "r13",
+            15 => "r14",
+            16 => "r15",
+            
+            17 => "flags",
+            18 => "bp",
+            19 => "ip",
+            20 => "sp",
+            _ => {
+                panic!("invalid register {index}");
+            }
+        }
+        
+        
+    }
+    
     pub fn load_program(&mut self, program: &[u8]) {
         let iter = program.iter().cloned();
         self.memory.buffer.splice(0..program.len(), iter);
@@ -611,7 +650,21 @@ impl Cpu {
         let opcode = Opcode::from(instruction);
         
         match opcode {
-       
+            Opcode::Call => {
+                // push return address
+                self.dec_sp(4);
+                let addr = self.next_long();
+                self.memory.set_long(self.sp(), self.ip() as u32 + 1);
+                
+                self.registers[IP] = addr;
+            }
+            Opcode::Return => {
+                // pop return address
+                let addr = self.memory.long(self.sp());
+                self.inc_sp(4);
+                self.registers[IP] = addr;
+            }
+            
             Opcode::JumpEqual => {
                 self.je();
             }
@@ -650,19 +703,6 @@ impl Cpu {
                 self.mov(&opcode);
             }
             
-            Opcode::Call => {
-                let addr = self.next_long();
-                // push ret addr
-                self.memory.set_long(self.sp(), self.ip() as u32);
-                self.dec_sp(4);
-                
-                self.registers[IP] = addr;
-            }
-            Opcode::Return => {
-                self.inc_sp(4);
-                let addr = self.memory.long(self.sp());
-                self.registers[IP] = addr;
-            }
             
             Opcode::AndShortImm |
             Opcode::AndLongImm  |
