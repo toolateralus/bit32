@@ -7,8 +7,37 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug",
-      "program": "${workspaceFolder}/<executable file>",
+      "name": "Debug executable 'bit32'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=bit32",
+          "--package=bit32"
+        ],
+        "filter": {
+          "name": "bit32",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'bit32'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=bit32",
+          "--package=bit32"
+        ],
+        "filter": {
+          "name": "bit32",
+          "kind": "bin"
+        }
+      },
       "args": [],
       "cwd": "${workspaceFolder}"
     }

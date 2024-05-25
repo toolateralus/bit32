@@ -489,27 +489,7 @@ mod tests {
             cpu.run();
             assert_eq!(cpu.registers[0], 0xCC);
         }
-
-        #[test]
-        fn test_and_byte_reg() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFF;
-            cpu.registers[1] = 0xCC;
-            cpu.load_program(&[Opcode::AndByteReg as u8, 1]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCC);
-        }
-
-        #[test]
-        fn test_and_byte_mem() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFF;
-            cpu.memory.buffer[100] = 0xCC;
-            cpu.load_program(&[Opcode::AndByteMem as u8, 100]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCC);
-        }
-
+        
         #[test]
         fn test_and_long_imm() {
             let mut cpu = Cpu::new();
@@ -520,50 +500,10 @@ mod tests {
         }
 
         #[test]
-        fn test_and_long_reg() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFFFFFFFF;
-            cpu.registers[1] = 0xCCCCCCCC;
-            cpu.load_program(&[Opcode::AndLongReg as u8, 1]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCCCCCCCC);
-        }
-
-        #[test]
-        fn test_and_long_mem() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFFFFFFFF;
-            cpu.memory.set_long(100, 0xCCCCCCCC);
-            cpu.load_program(&[Opcode::AndLongMem as u8, 100]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCCCCCCCC);
-        }
-
-        #[test]
         fn test_and_short_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xFFFF;
             cpu.load_program(&[Opcode::AndShortImm as u8, 0xCC, 0xCC]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCCCC);
-        }
-
-        #[test]
-        fn test_and_short_reg() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFFFF;
-            cpu.registers[1] = 0xCCCC;
-            cpu.load_program(&[Opcode::AndShortReg as u8,  1]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xCCCC);
-        }
-
-        #[test]
-        fn test_and_short_mem() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xFFFF;
-            cpu.memory.set_short(100, 0xCCCC);
-            cpu.load_program(&[Opcode::AndShortMem as u8, 100]);
             cpu.run();
             assert_eq!(cpu.registers[0], 0xCCCC);
         }

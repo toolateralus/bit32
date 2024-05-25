@@ -1,28 +1,28 @@
 
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Opcode {
   Hlt,
   // Move instructions
   // Byte
   MoveImmRegByte,
-  MoveRegRegByte,
-  MoveRegMemByte,
-  MoveMemMemByte,
-  MoveMemRegByte,
-  
-  // Short
   MoveImmRegShort,
-  MoveRegRegShort,
-  MoveRegMemShort,
-  MoveMemRegShort,
-  MoveMemMemShort,
-  
-  // Longs
   MoveImmRegLong,
+  
+  MoveRegRegByte,
+  MoveRegRegShort,
   MoveRegRegLong,
+  
+  MoveRegMemByte,
+  MoveRegMemShort,
   MoveRegMemLong,
+  
+  MoveMemRegByte,
+  MoveMemRegShort,
   MoveMemRegLong,
+  
+  MoveMemMemByte,
+  MoveMemMemShort,
   MoveMemMemLong,
   
   PushByteImm,
@@ -61,100 +61,13 @@ pub enum Opcode {
   DivShort,
   DivLong,
   
-
-  
   AndByteImm,
-  AndByteReg,
-  AndByteMem,
-  
   AndShortImm,
-  AndShortReg,
-  AndShortMem,
-  
   AndLongImm,
-  AndLongReg,
-  AndLongMem,
-  
+
   
   Call,
   Return,
-  
-  // NOT YET IMPLEMENTED BELOW
-  
-  OrByteImm,
-  OrByteReg,
-  OrByteMem,
-  
-  OrShortImm,
-  OrShortReg,
-  OrShortMem,
-  
-  
-  OrLongImm,
-  OrLongReg,
-  OrLongMem,
-  
-  XorByteImm,
-  XorByteReg,
-  XorByteMem,
-  
-  XorShortImm,
-  XorShortReg,
-  XorShortMem,
-  
-  XorLongImm,
-  XorLongReg,
-  XorLongMem,
-  
-  NotByteImm,
-  NotByteReg,
-  NotByteMem,
-  
-  NotShortImm,
-  NotShortReg,
-  NotShortMem,
-  
-  NotLongImm,
-  NotLongReg,
-  NotLongMem,
-  
-  ShiftLeftByteImm,
-  ShiftLeftByteReg,
-  ShiftLeftByteMem,
-  
-  ShiftLeftShortImm,
-  ShiftLeftShortReg,
-  ShiftLeftShortMem,
-  
-  ShiftLeftLongImm,
-  ShiftLeftLongReg,
-  ShiftLeftLongMem,
-  
-  ShiftRightByteImm,
-  ShiftRightByteReg,
-  ShiftRightByteMem,
-  
-  ShiftRightShortImm,
-  ShiftRightShortReg,
-  ShiftRightShortMem,
-  
-  ShiftRightLongImm,
-  ShiftRightLongReg,
-  ShiftRightLongMem,
-  
-  EqualByte,
-  EqualShort,
-  EqualLong,
-  NotEqualByte,
-  NotEqualShort,
-  NotEqualLong,
-  LessThanByte,
-  LessThanShort,
-  LessThanLong,
-  GreaterThanByte,
-  GreaterThanShort,
-  GreaterThanLong,
- 
   
   Nop,
 }

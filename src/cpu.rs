@@ -1,5 +1,6 @@
 use crate::opcodes::Opcode;
 use std::fmt::Debug;
+use std::io::Read;
 
 const REGISTERS_COUNT: usize = 21;
 
@@ -93,13 +94,28 @@ impl Cpu {
     }
 
     fn dec_sp(&mut self, value: u32) {
-        self.registers[SP] -= value;
+        if let Some(result) = self.registers[SP].checked_sub(value) {
+            self.registers[SP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("stack underflow.");
+        }
     }
     fn inc_sp(&mut self, value: u32) {
-        self.registers[SP] += value;
+        if let Some(result) = self.registers[SP].checked_add(value) {
+            self.registers[SP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("stack overflow.");
+        }
     }
     fn inc_ip(&mut self, value: u32) {
-        self.registers[IP] += value;
+        if let Some(result) = self.registers[IP].checked_add(value) {
+            self.registers[IP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("instruction pointer overflow.");
+        }
     }
 
     pub const HALT_FLAG: u8 = 0x01;
@@ -137,52 +153,15 @@ impl Cpu {
                 let rhs = self.next_byte();
                 self.registers[0] = (lhs & rhs) as u32;
             }
-            Opcode::AndByteMem => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
-                let addr = self.next_long() as usize;
-                let rhs = self.memory.byte(addr);
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndByteReg => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            
+
             Opcode::AndShortImm => {
                 let lhs = (self.registers[0] & 0xFFFF) as u16;
                 let rhs = self.next_short();
                 self.registers[0] = (lhs & rhs) as u32;
             }
-            Opcode::AndShortMem => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
-                let addr = self.next_long() as usize;
-                let rhs = self.memory.short(addr);
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndShortReg => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            
             Opcode::AndLongImm => {
                 let lhs = self.registers[0];
                 let rhs = self.next_long();
-                self.registers[0] = lhs & rhs;
-            }
-            Opcode::AndLongMem => {
-                let lhs = self.registers[0];
-                let addr = self.next_long() as usize;
-                let rhs = self.memory.long(addr);
-                self.registers[0] = lhs & rhs;
-            }
-            Opcode::AndLongReg => {
-                let lhs = self.registers[0];
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
                 self.registers[0] = lhs & rhs;
             }
             _ => {
@@ -548,11 +527,24 @@ impl Cpu {
         let iter = program.iter().cloned();
         self.memory.buffer.splice(0..program.len(), iter);
     }
-
+    
+    pub fn load_program_from_file(&mut self, file_path: &str) -> std::io::Result<()> {
+        let mut file = std::fs::File::open(file_path)?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)?;
+        self.load_program(&buffer);
+        
+        let prog = &self.memory.buffer[..buffer.len()];
+        
+        println!("loaded program: {:?}", prog);
+        
+        Ok(())
+    }
+    
     pub fn cycle(&mut self) {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
-
+        
         match opcode {
             Opcode::MoveRegRegLong
             | Opcode::MoveRegRegByte
@@ -586,9 +578,9 @@ impl Cpu {
                 self.registers[IP] = addr;
             }
             
-            Opcode::AndShortImm | Opcode::AndShortReg | Opcode::AndShortMem |
-            Opcode::AndLongImm | Opcode::AndLongReg | Opcode::AndLongMem |
-            Opcode::AndByteImm | Opcode::AndByteReg | Opcode::AndByteMem => {
+            Opcode::AndShortImm |
+            Opcode::AndLongImm  |
+            Opcode::AndByteImm  => {
                 self.and(&opcode)
             }
             
