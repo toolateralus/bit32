@@ -647,13 +647,13 @@ mod tests {
             // 1 cycle in routine
             cpu.memory.set_byte(100, Opcode::Return as u8);
             
-            // call 1 cycle
-            // long addr : 4 cycles
-            // halt on return 1 cycle
-            // ip is 0 indexed so ends on 6 cycles.
+            // call: 1 cycle
+            // long addr: 4 cycles
+            // ret instruction: 1 cycle
+            // halt on return: 1 cycle
             cpu.load_program(&[Opcode::Call as u8, 100, 0, 0 ,0, 0]);
             cpu.run();
-            assert_eq!(cpu.ip(), 6)
+            assert_eq!(cpu.ip(), 7)
         }
         
     }
