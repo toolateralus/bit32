@@ -478,6 +478,110 @@ mod tests {
         }
     }
     
+    mod jump_tests {
+        use crate::{cpu::Cpu, opcodes::Opcode};
+
+        #[test]
+        fn test_jne() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 11;
+            
+            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
+            cpu.load_program(&[Opcode::JumpNotEqual as u8, 10, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 255);
+            
+        }
+        
+        #[test]
+        fn test_jne_negative() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 10;
+            
+            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
+            // we expect this to nto happen, so cpu reg 0 will not equal 255.
+            cpu.load_program(&[Opcode::JumpNotEqual as u8, 10, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            
+            cpu.run();
+            
+            assert_ne!(cpu.registers[0], 255);
+            
+        }
+        
+        
+        #[test]
+        fn test_je() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 10;
+            
+            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
+            cpu.load_program(&[Opcode::JumpEqual as u8, 10, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 255);
+        }
+        
+        #[test]
+        fn test_je_negative() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 11;
+            
+            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
+            cpu.load_program(&[Opcode::JumpEqual as u8, 10, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            
+            cpu.run();
+            
+            assert_ne!(cpu.registers[0], 255);
+        }
+        
+    }
+    
+    mod compare_tests {
+        use crate::{cpu::Cpu, opcodes::Opcode};
+        #[test]
+        fn test_compare_reg() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 100;
+            cpu.registers[1] = 100;
+            cpu.load_program(&[Opcode::CompareReg as u8, 1]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 1);
+        }
+        
+        #[test]
+        fn test_compare_byte_imm() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 100;
+            cpu.load_program(&[Opcode::CompareByteImm as u8, 100]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 1);
+        }
+        #[test]
+        fn test_compare_short_imm() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 511;
+            cpu.load_program(&[Opcode::CompareShortImm as u8, 255, 1]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 1);
+        }
+        #[test]
+        fn test_compare_long_imm() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 0xFF_FF_FF_FF;
+            cpu.load_program(&[Opcode::CompareLongImm as u8, 0xFF, 0xFF, 0xFF, 0xFF]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 1);
+        }
+        
+    }
+    
     mod and_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
 

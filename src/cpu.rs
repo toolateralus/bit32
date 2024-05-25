@@ -141,6 +141,71 @@ impl Cpu {
             self.cycle();
         }
     }
+    
+    fn jmp(&mut self) {
+        let addr = self.next_long();
+        self.registers[IP] = addr;
+    }
+    
+    fn je(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs == rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    
+    fn jne(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs != rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    
+    fn cmp(&mut self, opcode : &Opcode) {
+        
+        match opcode {
+            
+            Opcode::CompareByteImm => {
+                let lhs = self.registers[0];
+                let rhs = self.next_byte();
+                self.registers[0] = if lhs == rhs as u32 {1} else {0};
+            }
+            Opcode::CompareShortImm => {
+                let lhs = self.registers[0];
+                let rhs = self.next_short();
+                self.registers[0] = if lhs == rhs as u32 {1} else {0};
+                
+            }
+            Opcode::CompareLongImm => {
+                let lhs = self.registers[0];
+                let rhs = self.next_long();
+                self.registers[0] = if lhs == rhs {1} else {0};
+                
+            }
+            Opcode::CompareReg => {
+                let lhs = self.registers[0];
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                self.registers[0] = if lhs == rhs {1} else {0};
+            }
+            _ => panic!("invalid compare")
+        }
+        
+    }
+    
+    fn jmp_reg(&mut self) {
+        let index = self.next_byte() as usize;
+        let addr = self.registers[index];
+        self.registers[IP] = addr;
+    }
+    
+    fn int(&mut self) {
+        todo!()
+    }
 }
 
 
@@ -546,6 +611,27 @@ impl Cpu {
         let opcode = Opcode::from(instruction);
         
         match opcode {
+       
+            Opcode::JumpEqual => {
+                self.je();
+            }
+            Opcode::JumpNotEqual => {
+                self.jne();
+            }
+            Opcode::JumpReg => {
+                self.jmp_reg();
+            }
+            Opcode::Jump => {
+                self.jmp();
+            }
+            
+            Opcode::CompareReg |
+            Opcode::CompareByteImm |
+            Opcode::CompareShortImm |
+            Opcode::CompareLongImm => {
+                self.cmp(&opcode);
+            }
+            
             Opcode::MoveRegRegLong
             | Opcode::MoveRegRegByte
             | Opcode::MoveRegRegShort

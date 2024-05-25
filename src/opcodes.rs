@@ -64,7 +64,24 @@ pub enum Opcode {
   AndByteImm,
   AndShortImm,
   AndLongImm,
-
+  
+  
+  JumpEqual,
+  JumpNotEqual,
+  
+  CompareByteImm,
+  CompareShortImm,
+  CompareLongImm,
+  
+  CompareReg,
+  
+  // TODO: implement idt & io ports.
+  // Interrupt,
+  // OutByte,
+  // InByte,
+  
+  Jump,
+  JumpReg,
   
   Call,
   Return,
