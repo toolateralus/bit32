@@ -218,10 +218,6 @@ impl Cpu {
         let addr = self.registers[index];
         self.registers[IP] = addr;
     }
-
-    fn int(&mut self) {
-        todo!()
-    }
 }
 
 impl Cpu {
