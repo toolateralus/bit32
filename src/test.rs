@@ -480,7 +480,24 @@ mod tests {
     
     mod jump_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
-
+        
+        #[test] 
+        fn test_jump() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::Jump as u8, 10, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 255);
+        }
+        
+        #[test] 
+        fn test_jump_reg() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.load_program(&[Opcode::JumpReg as u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, Opcode::MoveImmRegByte as u8, 0, 255]);
+            cpu.run();
+            assert_eq!(cpu.registers[0], 255);
+        }
+        
         #[test]
         fn test_jne() {
             let mut cpu = Cpu::new();
