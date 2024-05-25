@@ -1,10 +1,7 @@
-use crossterm::{execute, terminal};
-
-use crate::debug::Debugger;
 use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
-use std::io::{stdout, Read};
+use std::io::Read;
 
 const REGISTERS_COUNT: usize = 21;
 
@@ -32,7 +29,6 @@ impl Memory {
         };
     }
     pub fn byte(&mut self, addr: usize) -> u8 {
-        
         let b = self.buffer[addr];
         return b;
     }
@@ -69,13 +65,36 @@ pub struct Cpu {
 }
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let registers = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;32m{:?}\x1b[0m", "registers", self.registers);
-        let ip = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;33m{:?}\x1b[0m", "ip", self.ip());
-        let bp = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;34m{:?}\x1b[0m", "bp", self.bp());
-        let sp = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;35m{:?}\x1b[0m", "sp", self.sp());
-        let flags = format!("\x1b[0;36m{}\x1b[0m: \x1b[0;36m{:?}\x1b[0m", "flags", self.flags());
-        
-        write!(f, "Cpu {{\n{},\n{},\n{},\n{},\n{}\n}}", registers, ip, bp, sp, flags)
+        let registers = format!(
+            "\x1b[0;36m{}\x1b[0m: \x1b[0;32m{:?}\x1b[0m",
+            "registers", self.registers
+        );
+        let ip = format!(
+            "\x1b[0;36m{}\x1b[0m: \x1b[0;33m{:?}\x1b[0m",
+            "ip",
+            self.ip()
+        );
+        let bp = format!(
+            "\x1b[0;36m{}\x1b[0m: \x1b[0;34m{:?}\x1b[0m",
+            "bp",
+            self.bp()
+        );
+        let sp = format!(
+            "\x1b[0;36m{}\x1b[0m: \x1b[0;35m{:?}\x1b[0m",
+            "sp",
+            self.sp()
+        );
+        let flags = format!(
+            "\x1b[0;36m{}\x1b[0m: \x1b[0;36m{:?}\x1b[0m",
+            "flags",
+            self.flags()
+        );
+
+        write!(
+            f,
+            "Cpu {{\n{},\n{},\n{},\n{},\n{}\n}}",
+            registers, ip, bp, sp, flags
+        )
     }
 }
 // General
@@ -126,30 +145,29 @@ impl Cpu {
             registers: [0; REGISTERS_COUNT],
             memory: Memory::new(),
         };
-        
+
         // TODO: remove this after testing.
         // just a default stack so we don't have to set it up constantly.
         let bp = cpu.memory.buffer.len() - 20;
         cpu.registers[BP] = bp as u32;
-        
+
         let sp = bp - 1000;
         cpu.registers[SP] = sp as u32;
-        
+
         return cpu;
     }
-    
+
     pub fn run(&mut self) {
         while (self.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             self.cycle();
         }
     }
-   
-    
+
     fn jmp(&mut self) {
         let addr = self.next_long();
         self.registers[IP] = addr;
     }
-    
+
     fn je(&mut self) {
         let lhs = self.registers[0];
         let rhs = self.registers[1];
@@ -158,7 +176,7 @@ impl Cpu {
             self.registers[IP] = addr;
         }
     }
-    
+
     fn jne(&mut self) {
         let lhs = self.registers[0];
         let rhs = self.registers[1];
@@ -167,58 +185,48 @@ impl Cpu {
             self.registers[IP] = addr;
         }
     }
-    
-    fn cmp(&mut self, opcode : &Opcode) {
-        
+
+    fn cmp(&mut self, opcode: &Opcode) {
         match opcode {
-            
             Opcode::CompareByteImm => {
                 let lhs = self.registers[0];
                 let rhs = self.next_byte();
-                self.registers[0] = if lhs == rhs as u32 {1} else {0};
+                self.registers[0] = if lhs == rhs as u32 { 1 } else { 0 };
             }
             Opcode::CompareShortImm => {
                 let lhs = self.registers[0];
                 let rhs = self.next_short();
-                self.registers[0] = if lhs == rhs as u32 {1} else {0};
-                
+                self.registers[0] = if lhs == rhs as u32 { 1 } else { 0 };
             }
             Opcode::CompareLongImm => {
                 let lhs = self.registers[0];
                 let rhs = self.next_long();
-                self.registers[0] = if lhs == rhs {1} else {0};
-                
+                self.registers[0] = if lhs == rhs { 1 } else { 0 };
             }
             Opcode::CompareReg => {
                 let lhs = self.registers[0];
                 let index = self.next_byte() as usize;
                 let rhs = self.registers[index];
-                self.registers[0] = if lhs == rhs {1} else {0};
+                self.registers[0] = if lhs == rhs { 1 } else { 0 };
             }
-            _ => panic!("invalid compare")
+            _ => panic!("invalid compare"),
         }
-        
     }
-    
+
     fn jmp_reg(&mut self) {
         let index = self.next_byte() as usize;
         let addr = self.registers[index];
         self.registers[IP] = addr;
     }
-    
+
     fn int(&mut self) {
         todo!()
     }
 }
 
-
-
 impl Cpu {
-    
-    
     pub fn and(&mut self, op: &Opcode) {
-        
-        match op  {
+        match op {
             Opcode::AndByteImm => {
                 let lhs = (self.registers[0] & 0xFF) as u8;
                 let rhs = self.next_byte();
@@ -239,15 +247,9 @@ impl Cpu {
                 panic!("invalid and instruction");
             }
         }
-        
-        
     }
-    pub fn or(&mut self, op: &Opcode) {
-        
-    }
-    pub fn xor(&mut self, op: &Opcode) {
-        
-    }
+    pub fn or(&mut self, _op: &Opcode) {}
+    pub fn xor(&mut self, _op: &Opcode) {}
 }
 
 // Stack
@@ -408,7 +410,7 @@ impl Cpu {
             }
         }
     }
-    
+
     pub fn arith_short(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::AddShort => {
@@ -442,7 +444,7 @@ impl Cpu {
             }
         }
     }
-    
+
     pub fn arith_byte(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::AddByte => {
@@ -476,10 +478,9 @@ impl Cpu {
             }
         }
     }
-    
+
     pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
-            
             Opcode::MoveImmRegByte => {
                 let index = self.next_byte() as usize;
                 let value = self.next_byte();
@@ -606,7 +607,7 @@ impl Cpu {
             7 => "rhx",
             8 => "rzx",
             9 => "rwx",
-            
+
             10 => "r9",
             11 => "r10",
             12 => "r11",
@@ -614,7 +615,7 @@ impl Cpu {
             14 => "r13",
             15 => "r14",
             16 => "r15",
-            
+
             17 => "flags",
             18 => "bp",
             19 => "ip",
@@ -623,39 +624,37 @@ impl Cpu {
                 panic!("invalid register {index}");
             }
         }
-        
-        
     }
-    
+
     pub fn load_program(&mut self, program: &[u8]) {
         let iter = program.iter().cloned();
         self.memory.buffer.splice(0..program.len(), iter);
     }
-    
+
     pub fn load_program_from_file(&mut self, file_path: &str) -> std::io::Result<()> {
         let mut file = std::fs::File::open(file_path)?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         self.load_program(&buffer);
-        
+
         let prog = &self.memory.buffer[..buffer.len()];
-        
+
         println!("loaded program: {:?}", prog);
-        
+
         Ok(())
     }
-    
+
     pub fn cycle(&mut self) {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
-        
+
         match opcode {
             Opcode::Call => {
                 // push return address
                 self.dec_sp(4);
                 let addr = self.next_long();
                 self.memory.set_long(self.sp(), self.ip() as u32 + 1);
-                
+
                 self.registers[IP] = addr;
             }
             Opcode::Return => {
@@ -664,7 +663,7 @@ impl Cpu {
                 self.inc_sp(4);
                 self.registers[IP] = addr;
             }
-            
+
             Opcode::JumpEqual => {
                 self.je();
             }
@@ -677,14 +676,14 @@ impl Cpu {
             Opcode::Jump => {
                 self.jmp();
             }
-            
-            Opcode::CompareReg |
-            Opcode::CompareByteImm |
-            Opcode::CompareShortImm |
-            Opcode::CompareLongImm => {
+
+            Opcode::CompareReg
+            | Opcode::CompareByteImm
+            | Opcode::CompareShortImm
+            | Opcode::CompareLongImm => {
                 self.cmp(&opcode);
             }
-            
+
             Opcode::MoveRegRegLong
             | Opcode::MoveRegRegByte
             | Opcode::MoveRegRegShort
@@ -697,19 +696,14 @@ impl Cpu {
             | Opcode::MoveMemRegByte
             | Opcode::MoveMemMemByte
             | Opcode::MoveImmRegLong
-            | Opcode::MoveImmRegShort 
+            | Opcode::MoveImmRegShort
             | Opcode::MoveImmRegByte
             | Opcode::MoveRegMemByte => {
                 self.mov(&opcode);
             }
-            
-            
-            Opcode::AndShortImm |
-            Opcode::AndLongImm  |
-            Opcode::AndByteImm  => {
-                self.and(&opcode)
-            }
-            
+
+            Opcode::AndShortImm | Opcode::AndLongImm | Opcode::AndByteImm => self.and(&opcode),
+
             Opcode::AddByte | Opcode::DivByte | Opcode::MulByte | Opcode::SubByte => {
                 self.arith_byte(&opcode);
             }

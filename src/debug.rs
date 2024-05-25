@@ -6,13 +6,12 @@ use crossterm::{
     terminal,
 };
 use std::{
-    fmt::Debug,
     io::{stdout, Write},
     thread,
     time::Duration,
 };
 
-use crate::cpu::{Cpu, Memory, IP};
+use crate::cpu::{Cpu, Memory};
 use crossterm::event::{Event, KeyCode};
 
 pub enum DebugState {
@@ -25,17 +24,16 @@ pub enum DebugState {
 }
 
 pub struct Debugger {
-    pub file : String,
+    pub file: String,
 }
 impl Debugger {
     pub fn input(&self, state: &mut DebugState) {
         if event::poll(Duration::from_secs(0)).unwrap() {
             let event = event::read().unwrap();
-            
-            if let Event::Resize(_,_) = event  {
+
+            if let Event::Resize(_, _) = event {
                 execute!(stdout(), terminal::Clear(terminal::ClearType::All)).unwrap();
-            }
-            else if let Event::Key(key_event) = event {
+            } else if let Event::Key(key_event) = event {
                 *state = match key_event.code {
                     KeyCode::Char('1') => DebugState::Executing,
                     KeyCode::Char('2') => DebugState::Pause,
@@ -54,7 +52,7 @@ impl Debugger {
     pub fn run(&mut self, file: &str) {
         let mut cpu = Cpu::new();
         self.file = file.to_string();
-        
+
         cpu.load_program_from_file(file).unwrap();
         let mut stdout = stdout();
         let _raw = terminal::enable_raw_mode().unwrap();
@@ -71,15 +69,13 @@ impl Debugger {
                 DebugState::Pause => {
                     self.pause(&mut cpu, &mut state);
                 }
-                
-                DebugState::Reset => {
-                    
-                }
+
+                DebugState::Reset => {}
                 DebugState::Abort => break,
             }
             self.display_registers(&cpu);
         }
-        
+
         execute!(stdout, cursor::Show).unwrap();
         terminal::disable_raw_mode().unwrap();
         println!("\n\x1b[;032]RESULT::\n\n\t{:?}", cpu);
@@ -123,7 +119,11 @@ impl Debugger {
             execute!(stdout, cursor::MoveTo(0, i as u16)).unwrap();
             queue!(
                 stdout,
-                Print(format!("\x1b[1;96m{}\x1b[1;97m: {}\r", Cpu::reg_index_to_str(&i), register))
+                Print(format!(
+                    "\x1b[1;96m{}\x1b[1;97m: {}\r",
+                    Cpu::reg_index_to_str(&i),
+                    register
+                ))
             )
             .unwrap();
         }
