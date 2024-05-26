@@ -221,14 +221,13 @@ impl Cpu {
 }
 
 impl Cpu {
-    pub fn and(&mut self, op: &Opcode) {
+    pub fn and_byte(&mut self, op: &Opcode) {
         match op {
             Opcode::AndByteImm => {
                 let lhs = (self.registers[0] & 0xFF) as u8;
                 let rhs = self.next_byte();
                 self.registers[0] = (lhs & rhs) as u32;
             }
-
             Opcode::AndShortImm => {
                 let lhs = (self.registers[0] & 0xFFFF) as u16;
                 let rhs = self.next_short();
@@ -237,6 +236,42 @@ impl Cpu {
             Opcode::AndLongImm => {
                 let lhs = self.registers[0];
                 let rhs = self.next_long();
+                self.registers[0] = lhs & rhs;
+            }
+            Opcode::AndByteReg => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortReg => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndLongReg => {
+                let lhs = self.registers[0];
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                self.registers[0] = lhs & rhs;
+            }
+            Opcode::AndByteMem => {
+                let lhs = (self.registers[0] & 0xFF) as u8;
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortMem => {
+                let lhs = (self.registers[0] & 0xFFFF) as u16;
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
+                self.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndLongMem => {
+                let lhs = self.registers[0];
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
                 self.registers[0] = lhs & rhs;
             }
             _ => {
@@ -374,30 +409,79 @@ impl Cpu {
 // Arithmetic & Move
 impl Cpu {
     pub fn arith_long(&mut self, opcode: &Opcode) {
+        let lhs = self.registers[0];
         match opcode {
-            Opcode::AddLong => {
-                let lhs = self.registers[0];
+            Opcode::AddLongImm => {
                 let rhs = self.next_long();
                 let result = lhs.wrapping_add(rhs);
                 self.registers[0] = result;
             }
-            Opcode::SubLong => {
-                let lhs = self.registers[0];
+            Opcode::AddLongReg => {
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::AddLongMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::SubLongImm => {
                 let rhs = self.next_long();
                 let result = lhs.wrapping_sub(rhs);
                 self.registers[0] = result;
             }
-            Opcode::DivLong => {
-                let lhs = self.registers[0];
+            Opcode::SubLongReg => {
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::SubLongMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::DivLongImm => {
                 let rhs = self.next_long();
                 let quotient = lhs / rhs;
                 let remainder = lhs % rhs;
                 self.registers[0] = quotient;
                 self.registers[1] = remainder;
             }
-            Opcode::MulLong => {
-                let lhs = self.registers[0];
+            Opcode::DivLongReg => {
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient;
+                self.registers[1] = remainder;
+            }
+            Opcode::DivLongMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient;
+                self.registers[1] = remainder;
+            }
+            Opcode::MulLongImm => {
                 let rhs = self.next_long();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::MulLongReg => {
+                let index = self.next_byte() as usize;
+                let rhs = self.registers[index];
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = result;
+            }
+            Opcode::MulLongMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.long(addr);
                 let result = lhs.wrapping_mul(rhs);
                 self.registers[0] = result;
             }
@@ -408,30 +492,79 @@ impl Cpu {
     }
 
     pub fn arith_short(&mut self, opcode: &Opcode) {
+        let lhs = (self.registers[0] & 0xFFFF) as u16;
         match opcode {
-            Opcode::AddShort => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
+            Opcode::AddShortImm => {
                 let rhs = self.next_short();
                 let result = lhs.wrapping_add(rhs);
                 self.registers[0] = (result & 0xFFFF) as u32;
             }
-            Opcode::SubShort => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
+            Opcode::AddShortReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::AddShortMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::SubShortImm => {
                 let rhs = self.next_short();
                 let result = lhs.wrapping_sub(rhs);
                 self.registers[0] = (result & 0xFFFF) as u32;
             }
-            Opcode::DivShort => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
+            Opcode::SubShortReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::SubShortMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::DivShortImm => {
                 let rhs = self.next_short();
                 let quotient = lhs / rhs;
                 let remainder = lhs % rhs;
                 self.registers[0] = quotient as u32;
                 self.registers[1] = remainder as u32;
             }
-            Opcode::MulShort => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
+            Opcode::DivShortReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::DivShortMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::MulShortImm => {
                 let rhs = self.next_short();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::MulShortReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFFFF) as u16;
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFFFF) as u32;
+            }
+            Opcode::MulShortMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.short(addr);
                 let result = lhs.wrapping_mul(rhs);
                 self.registers[0] = (result & 0xFFFF) as u32;
             }
@@ -442,30 +575,79 @@ impl Cpu {
     }
 
     pub fn arith_byte(&mut self, opcode: &Opcode) {
+        let lhs = (self.registers[0] & 0xFF) as u8;
         match opcode {
-            Opcode::AddByte => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
+            Opcode::AddByteImm => {
                 let rhs = self.next_byte();
                 let result = lhs.wrapping_add(rhs);
                 self.registers[0] = (result & 0xFF) as u32;
             }
-            Opcode::SubByte => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
+            Opcode::AddByteReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::AddByteMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
+                let result = lhs.wrapping_add(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::SubByteImm => {
                 let rhs = self.next_byte();
                 let result = lhs.wrapping_sub(rhs);
                 self.registers[0] = (result & 0xFF) as u32;
             }
-            Opcode::DivByte => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
+            Opcode::SubByteReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::SubByteMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
+                let result = lhs.wrapping_sub(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::DivByteImm => {
                 let rhs = self.next_byte();
                 let quotient = lhs / rhs;
                 let remainder = lhs % rhs;
                 self.registers[0] = quotient as u32;
                 self.registers[1] = remainder as u32;
             }
-            Opcode::MulByte => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
+            Opcode::DivByteReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::DivByteMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
+                let quotient = lhs / rhs;
+                let remainder = lhs % rhs;
+                self.registers[0] = quotient as u32;
+                self.registers[1] = remainder as u32;
+            }
+            Opcode::MulByteImm => {
                 let rhs = self.next_byte();
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::MulByteReg => {
+                let index = self.next_byte() as usize;
+                let rhs = (self.registers[index] & 0xFF) as u8;
+                let result = lhs.wrapping_mul(rhs);
+                self.registers[0] = (result & 0xFF) as u32;
+            }
+            Opcode::MulByteMem => {
+                let addr = self.next_long() as usize;
+                let rhs = self.memory.byte(addr);
                 let result = lhs.wrapping_mul(rhs);
                 self.registers[0] = (result & 0xFF) as u32;
             }
@@ -669,7 +851,7 @@ impl Cpu {
             Opcode::JumpReg => {
                 self.jmp_reg();
             }
-            Opcode::Jump => {
+            Opcode::JumpImm => {
                 self.jmp();
             }
 
@@ -698,15 +880,56 @@ impl Cpu {
                 self.mov(&opcode);
             }
 
-            Opcode::AndShortImm | Opcode::AndLongImm | Opcode::AndByteImm => self.and(&opcode),
+            Opcode::AndShortImm
+            | Opcode::AndShortReg
+            | Opcode::AndShortMem
+            | Opcode::AndLongImm
+            | Opcode::AndLongReg
+            | Opcode::AndLongMem
+            | Opcode::AndByteImm
+            | Opcode::AndByteReg
+            | Opcode::AndByteMem => self.and_byte(&opcode),
 
-            Opcode::AddByte | Opcode::DivByte | Opcode::MulByte | Opcode::SubByte => {
+            Opcode::AddByteImm
+            | Opcode::AddByteReg
+            | Opcode::AddByteMem
+            | Opcode::DivByteImm
+            | Opcode::DivByteReg
+            | Opcode::DivByteMem
+            | Opcode::MulByteImm
+            | Opcode::MulByteReg
+            | Opcode::MulByteMem
+            | Opcode::SubByteImm
+            | Opcode::SubByteReg
+            | Opcode::SubByteMem => {
                 self.arith_byte(&opcode);
             }
-            Opcode::AddShort | Opcode::DivShort | Opcode::MulShort | Opcode::SubShort => {
+            Opcode::AddShortImm
+            | Opcode::AddShortReg
+            | Opcode::AddShortMem
+            | Opcode::DivShortImm
+            | Opcode::DivShortReg
+            | Opcode::DivShortMem
+            | Opcode::MulShortImm
+            | Opcode::MulShortReg
+            | Opcode::MulShortMem
+            | Opcode::SubShortImm
+            | Opcode::SubShortReg
+            | Opcode::SubShortMem => {
                 self.arith_short(&opcode);
             }
-            Opcode::AddLong | Opcode::DivLong | Opcode::MulLong | Opcode::SubLong => {
+            Opcode::AddLongImm
+            | Opcode::AddLongReg
+            | Opcode::AddLongMem
+            | Opcode::DivLongImm
+            | Opcode::DivLongReg
+            | Opcode::DivLongMem
+            | Opcode::MulLongImm
+            | Opcode::MulLongReg
+            | Opcode::MulLongMem
+            | Opcode::SubLongImm
+            | Opcode::SubLongReg
+            | Opcode::SubLongMem => {
                 self.arith_long(&opcode);
             }
 

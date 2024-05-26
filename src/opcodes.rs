@@ -3,7 +3,6 @@
 pub enum Opcode {
     Hlt,
     // Move instructions
-    // Byte
     MoveImmRegByte,
     MoveImmRegShort,
     MoveImmRegLong,
@@ -24,6 +23,7 @@ pub enum Opcode {
     MoveMemMemShort,
     MoveMemMemLong,
 
+    // Push
     PushByteImm,
     PushShortImm,
     PushLongImm,
@@ -36,6 +36,7 @@ pub enum Opcode {
     PushShortMem,
     PushLongMem,
 
+    // Pop
     PopByteReg,
     PopShortReg,
     PopLongReg,
@@ -44,29 +45,78 @@ pub enum Opcode {
     PopShortMem,
     PopLongMem,
 
-    AddByte,
-    AddShort,
-    AddLong,
+    // Add
+    AddByteImm,
+    AddShortImm,
+    AddLongImm,
 
-    SubByte,
-    SubShort,
-    SubLong,
+    AddByteReg,
+    AddShortReg,
+    AddLongReg,
 
-    MulByte,
-    MulShort,
-    MulLong,
+    AddByteMem,
+    AddShortMem,
+    AddLongMem,
 
-    DivByte,
-    DivShort,
-    DivLong,
+    // Sub
+    SubByteImm,
+    SubShortImm,
+    SubLongImm,
 
+    SubByteReg,
+    SubShortReg,
+    SubLongReg,
+
+    SubByteMem,
+    SubShortMem,
+    SubLongMem,
+
+    // Mul
+    MulByteImm,
+    MulShortImm,
+    MulLongImm,
+
+    MulByteReg,
+    MulShortReg,
+    MulLongReg,
+
+    MulByteMem,
+    MulShortMem,
+    MulLongMem,
+
+    // Div
+    DivByteImm,
+    DivShortImm,
+    DivLongImm,
+
+    DivByteReg,
+    DivShortReg,
+    DivLongReg,
+
+    DivByteMem,
+    DivShortMem,
+    DivLongMem,
+
+    // And
     AndByteImm,
     AndShortImm,
     AndLongImm,
 
+    AndByteReg,
+    AndShortReg,
+    AndLongReg,
+
+    AndByteMem,
+    AndShortMem,
+    AndLongMem,
+
+    // Jumps
     JumpEqual,
     JumpNotEqual,
+    JumpImm,
+    JumpReg,
 
+    // Compare
     CompareByteImm,
     CompareShortImm,
     CompareLongImm,
@@ -77,9 +127,6 @@ pub enum Opcode {
     // Interrupt,
     // OutByte,
     // InByte,
-    Jump,
-    JumpReg,
-
     Call,
     Return,
 
@@ -88,10 +135,11 @@ pub enum Opcode {
 
 impl From<u8> for Opcode {
     fn from(value: u8) -> Self {
-        let opcode: Opcode;
-        unsafe {
-            opcode = std::mem::transmute::<u8, Opcode>(value);
+        if value > Opcode::Nop as u8 {
+            panic!("Invalid opcode: {}", value);
         }
-        return opcode;
+        unsafe {
+            return std::mem::transmute::<u8, Opcode>(value);
+        }
     }
 }
