@@ -1026,7 +1026,30 @@ mod tests {
             
             assert_eq!(cpu.registers[0], 90);
         }
-
+        
+        
+        #[test]
+        fn test_mov_imm_mem_byte() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmMemByte as u8, 100, 0, 0, 0, 250]);
+            cpu.run();
+            assert_eq!(cpu.memory.byte(100), 250);
+        }
+        #[test]
+        fn test_mov_imm_mem_short() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmMemShort as u8, 100, 0, 0, 0, 0xFF, 0xFF]);
+            cpu.run();
+            assert_eq!(cpu.memory.short(100), 0xFFFF);
+        }
+        #[test]
+        fn test_mov_imm_mem_long() {
+            let mut cpu = Cpu::new();
+            cpu.load_program(&[Opcode::MoveImmMemLong as u8, 100, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
+            cpu.run();
+            assert_eq!(cpu.memory.long(100), 0xFFFFFFFF);
+        }
+        
         #[test]
         fn test_mov_mem_indirect_short() {
             let mut cpu = Cpu::new();

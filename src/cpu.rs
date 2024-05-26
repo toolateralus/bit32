@@ -761,8 +761,21 @@ impl Cpu {
                 let value = self.memory.long(addr);
                 self.registers[idx] = value;
             }
-            
-            
+            Opcode::MoveImmMemByte => {
+                let addr = self.next_long() as usize;
+                let value = self.next_byte();
+                self.memory.set_byte(addr, value);
+            }
+            Opcode::MoveImmMemShort => {
+                let addr = self.next_long() as usize;
+                let value = self.next_short();
+                self.memory.set_short(addr, value);
+            }
+            Opcode::MoveImmMemLong => {
+                let addr = self.next_long() as usize;
+                let value = self.next_long();
+                self.memory.set_long(addr, value);
+            }
             Opcode::MoveRegMemLong => {
                 let dest = self.next_long() as usize;
                 let src = self.next_byte() as usize;
@@ -923,8 +936,11 @@ impl Cpu {
             | Opcode::CompareLongImm => {
                 self.cmp(&opcode);
             }
-
-            Opcode::MoveRegRegLong
+            
+            Opcode::MoveImmMemByte
+            | Opcode::MoveImmMemShort
+            | Opcode::MoveImmMemLong
+            | Opcode::MoveRegRegLong
             | Opcode::MoveRegRegByte
             | Opcode::MoveRegRegShort
             | Opcode::MoveRegMemShort

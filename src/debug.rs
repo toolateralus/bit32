@@ -60,9 +60,12 @@ impl Debugger {
         execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
 
         let mut state: DebugState = DebugState::Executing;
+        let start_time = std::time::Instant::now();
+        let mut cycle_count = 0;
 
         while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             cpu.cycle();
+            cycle_count += 1;
             self.input(&mut state);
             match state {
                 DebugState::Executing | DebugState::Step | DebugState::Continue => {}
@@ -73,7 +76,11 @@ impl Debugger {
                 DebugState::Reset => {}
                 DebugState::Abort => break,
             }
-            self.display_registers(&cpu);
+            let elapsed_time = start_time.elapsed();
+            let elapsed_seconds = elapsed_time.as_secs_f64();
+            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0; // Changed to MHz
+            self.display_registers(&cpu, mhz); // Now displaying MHz
+       
         }
 
         execute!(stdout, cursor::Show).unwrap();
@@ -87,7 +94,7 @@ impl Debugger {
             match state {
                 DebugState::Step => {
                     cpu.cycle();
-                    self.display_registers(cpu);
+                    self.display_registers(cpu, 0.0);
                     *state = DebugState::Pause;
                     continue;
                 }
@@ -113,7 +120,7 @@ impl Debugger {
         }
     }
 
-    pub fn display_registers(&self, cpu: &Cpu) {
+    pub fn display_registers(&self, cpu: &Cpu, ghz : f64) {
         let mut stdout = stdout();
         for (i, register) in cpu.registers.iter().enumerate() {
             execute!(stdout, cursor::MoveTo(0, i as u16)).unwrap();
@@ -124,9 +131,16 @@ impl Debugger {
                     Cpu::reg_index_to_str(&i),
                     register
                 ))
-            )
-            .unwrap();
+            ).unwrap();
+            
         }
+        queue!(
+            stdout, 
+            Print(
+                format!("CPU Speed: {:.2} MHz", ghz)
+            )
+        ).unwrap();
+        
         stdout.flush().unwrap();
     }
 }
