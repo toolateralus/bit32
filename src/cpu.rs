@@ -1030,6 +1030,9 @@ impl Cpu {
                     0 => {
                         functions::log_memory(self);
                     }
+                    1 => {
+                        functions::print(self);
+                    }
                     _ => {
                         panic!("invalid rust function: {}", idx);
                     }

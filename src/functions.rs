@@ -2,6 +2,11 @@ use crate::cpu::Cpu;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+pub fn print(cpu: &mut Cpu) {
+    let string = cpu.next_utf8().unwrap();
+    let mut file = OpenOptions::new().append(true).open("logs.txt").unwrap();
+    writeln!(file, "{}", string).unwrap();
+}
 pub fn log_memory(cpu: &mut Cpu) {
     let start_idx = cpu.registers[0] as usize;
     let end_idx = cpu.registers[1] as usize;
