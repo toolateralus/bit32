@@ -406,8 +406,9 @@ impl Cpu {
     }
 }
 
-// Arithmetic & Move
+// Arithmetic 
 impl Cpu {
+    
     pub fn arith_long(&mut self, opcode: &Opcode) {
         let lhs = self.registers[0];
         match opcode {
@@ -490,7 +491,7 @@ impl Cpu {
             }
         }
     }
-
+    
     pub fn arith_short(&mut self, opcode: &Opcode) {
         let lhs = (self.registers[0] & 0xFFFF) as u16;
         match opcode {
@@ -573,7 +574,7 @@ impl Cpu {
             }
         }
     }
-
+    
     pub fn arith_byte(&mut self, opcode: &Opcode) {
         let lhs = (self.registers[0] & 0xFF) as u8;
         match opcode {
@@ -656,7 +657,11 @@ impl Cpu {
             }
         }
     }
+    
+}
 
+//Move
+impl Cpu {
     pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::MoveImmRegByte => {
@@ -711,7 +716,52 @@ impl Cpu {
                 let value = self.memory.short(src);
                 self.memory.set_short(dest, value);
             }
-
+            
+            
+            Opcode::MoveMemIndirectByte => {
+                let dest = self.next_long() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.byte(addr);
+                self.memory.set_byte(dest, value);
+            }
+            Opcode::MoveRegIndirectByte => {
+                let idx = self.next_byte() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.byte(addr);
+                self.registers[idx] = value as u32;
+            }
+            Opcode::MoveMemIndirectShort => {
+                let dest = self.next_long() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.short(addr);
+                self.memory.set_short(dest, value);
+            }
+            Opcode::MoveRegIndirectShort => {
+                let idx = self.next_byte() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.short(addr);
+                self.registers[idx] = value as u32;
+            }
+            Opcode::MoveMemIndirectLong => {
+                let dest = self.next_long() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.long(addr);
+                self.memory.set_long(dest, value);
+            }
+            Opcode::MoveRegIndirectLong => {
+                let idx = self.next_byte() as usize;
+                let src = self.next_long() as usize;
+                let addr = self.memory.long(src) as usize;
+                let value = self.memory.long(addr);
+                self.registers[idx] = value;
+            }
+            
+            
             Opcode::MoveRegMemLong => {
                 let dest = self.next_long() as usize;
                 let src = self.next_byte() as usize;
@@ -876,6 +926,12 @@ impl Cpu {
             | Opcode::MoveImmRegLong
             | Opcode::MoveImmRegShort
             | Opcode::MoveImmRegByte
+            | Opcode::MoveMemIndirectByte 
+            | Opcode::MoveRegIndirectByte 
+            | Opcode::MoveMemIndirectShort 
+            | Opcode::MoveRegIndirectShort 
+            | Opcode::MoveMemIndirectLong
+            | Opcode::MoveRegIndirectLong
             | Opcode::MoveRegMemByte => {
                 self.mov(&opcode);
             }

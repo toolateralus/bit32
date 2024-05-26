@@ -1003,5 +1003,76 @@ mod tests {
 
             assert_eq!(cpu.memory.long(767), 0xDEADBEEF);
         }
+
+        #[test]
+        fn test_mov_mem_indirect_byte() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 90);
+            
+            cpu.load_program(&[Opcode::MoveMemIndirectByte as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(90, cpu.memory.buffer[511]);
+        }
+        #[test]
+        fn test_mov_reg_indirect_byte() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 90);
+            
+            cpu.load_program(&[Opcode::MoveRegIndirectByte as u8, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 90);
+        }
+
+        #[test]
+        fn test_mov_mem_indirect_short() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 0xFFFF);
+            
+            cpu.load_program(&[Opcode::MoveMemIndirectShort as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(0xFFFF, cpu.memory.short(511));
+        }
+        
+        #[test]
+        fn test_mov_reg_indirect_short() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 0xFFFF);
+            
+            cpu.load_program(&[Opcode::MoveRegIndirectShort as u8, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 0xFFFF);
+        }
+
+        #[test]
+        fn test_mov_mem_indirect_long() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 0xFFFFFFFF);
+            
+            cpu.load_program(&[Opcode::MoveMemIndirectLong as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(0xFFFFFFFF, cpu.memory.long(511));
+        }
+
+        #[test]
+        fn test_mov_reg_indirect_long() {
+            let mut cpu = Cpu::new();
+            cpu.memory.set_long(250, 100);
+            cpu.memory.set_long(100, 0xFFFFFFFF);
+            
+            cpu.load_program(&[Opcode::MoveRegIndirectLong as u8, 0, 250, 0, 0 , 0]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 0xFFFFFFFF);
+        }
     }
 }

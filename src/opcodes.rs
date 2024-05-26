@@ -6,11 +6,11 @@ pub enum Opcode {
     MoveImmRegByte,
     MoveImmRegShort,
     MoveImmRegLong,
-
+    
     MoveRegRegByte,
     MoveRegRegShort,
     MoveRegRegLong,
-
+    
     MoveRegMemByte,
     MoveRegMemShort,
     MoveRegMemLong,
@@ -22,6 +22,14 @@ pub enum Opcode {
     MoveMemMemByte,
     MoveMemMemShort,
     MoveMemMemLong,
+    
+    MoveRegIndirectByte,
+    MoveRegIndirectShort,
+    MoveRegIndirectLong,
+    
+    MoveMemIndirectByte,
+    MoveMemIndirectShort,
+    MoveMemIndirectLong,
 
     // Push
     PushByteImm,
