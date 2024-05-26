@@ -1,3 +1,4 @@
+use crate::functions;
 use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
@@ -97,6 +98,7 @@ impl Debug for Cpu {
         )
     }
 }
+
 // General
 impl Cpu {
     pub fn flags(&self) -> u8 {
@@ -218,6 +220,7 @@ impl Cpu {
         let addr = self.registers[index];
         self.registers[IP] = addr;
     }
+    
 }
 
 impl Cpu {
@@ -716,8 +719,6 @@ impl Cpu {
                 let value = self.memory.short(src);
                 self.memory.set_short(dest, value);
             }
-            
-            
             Opcode::MoveMemIndirectByte => {
                 let dest = self.next_long() as usize;
                 let src = self.next_long() as usize;
@@ -819,6 +820,17 @@ impl Cpu {
         let high = self.next_short() as u32;
         return (high << 16) | low;
     }
+    pub fn next_utf8(&mut self) -> Result<String, std::str::Utf8Error> {
+        let mut bytes = Vec::new();
+        loop {
+            let b = self.next_byte();
+            if b == 0 {
+                break;
+            }
+            bytes.push(b);
+        }
+        std::str::from_utf8(&bytes).map(|s| s.to_string())
+    }
 }
 
 // General, Cycle, Load Program
@@ -835,7 +847,7 @@ impl Cpu {
             7 => "rhx",
             8 => "rzx",
             9 => "rwx",
-
+            
             10 => "r9",
             11 => "r10",
             12 => "r11",
@@ -843,7 +855,7 @@ impl Cpu {
             14 => "r13",
             15 => "r14",
             16 => "r15",
-
+            
             17 => "flags",
             18 => "bp",
             19 => "ip",
@@ -1009,7 +1021,24 @@ impl Cpu {
             | Opcode::PopLongReg => {
                 self.pop(&opcode);
             }
-
+            
+            
+            Opcode::RustCall => {
+                let idx = self.next_byte() as usize;
+                
+                match idx {
+                    0 => {
+                        functions::log_memory(self);
+                    }
+                    _ => {
+                        panic!("invalid rust function: {}", idx);
+                    }
+                }
+                
+                
+            }
+            
+            
             Opcode::Hlt => {
                 self.registers[FLAGS] = (self.flags() | Cpu::HALT_FLAG) as u32;
             }

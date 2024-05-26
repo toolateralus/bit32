@@ -130,14 +130,15 @@ pub enum Opcode {
     CompareLongImm,
 
     CompareReg,
-
+    
     // TODO: implement idt & io ports.
     // Interrupt,
     // OutByte,
     // InByte,
     Call,
     Return,
-
+    RustCall,
+    
     Nop,
 }
 

@@ -4,6 +4,7 @@ pub mod cpu;
 pub mod debug;
 pub mod opcodes;
 pub mod test;
+pub mod functions;
 
 fn main() {
     let file = "../asm32/test.o";
