@@ -922,7 +922,7 @@ impl Cpu {
                 // push return address
                 self.dec_sp(4);
                 let addr = self.next_long();
-                self.memory.set_long(self.sp(), self.ip() as u32 + 1);
+                self.memory.set_long(self.sp(), self.ip() as u32);
 
                 self.registers[IP] = addr;
             }

@@ -923,7 +923,7 @@ mod tests {
             // halt on return: 1 cycle
             cpu.load_program(&[Opcode::Call as u8, 100, 0, 0, 0, 0]);
             cpu.run();
-            assert_eq!(cpu.ip(), 7)
+            assert_eq!(cpu.ip(), 6)
         }
     }
 
