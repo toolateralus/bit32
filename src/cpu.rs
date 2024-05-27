@@ -99,23 +99,42 @@ impl Debug for Cpu {
     }
 }
 
-// General
+// General, register helpers.
 impl Cpu {
+    pub const HALT_FLAG: u8 = 0x01;
+    pub fn new() -> Self {
+        let mut cpu = Cpu {
+            registers: [0; REGISTERS_COUNT],
+            memory: Memory::new(),
+        };
+
+        // TODO: remove this after testing.
+        // just a default stack so we don't have to set it up constantly.
+        let bp = cpu.memory.buffer.len() - 20;
+        cpu.registers[BP] = bp as u32;
+
+        let sp = bp - 1000;
+        cpu.registers[SP] = sp as u32;
+        
+        return cpu;
+    }
+    pub fn run(&mut self) {
+        while (self.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
+            self.cycle();
+        }
+    }
     pub fn flags(&self) -> u8 {
         self.registers[FLAGS] as u8
     }
     pub fn sp(&self) -> usize {
         self.registers[SP] as usize
     }
-
     pub fn ip(&self) -> usize {
         self.registers[IP] as usize
     }
-
     pub fn bp(&self) -> usize {
         self.registers[BP] as usize
     }
-
     fn dec_sp(&mut self, value: u32) {
         if let Some(result) = self.registers[SP].checked_sub(value) {
             self.registers[SP] = result;
@@ -140,72 +159,10 @@ impl Cpu {
             panic!("instruction pointer overflow.");
         }
     }
+}
 
-    pub const HALT_FLAG: u8 = 0x01;
-    pub fn new() -> Self {
-        let mut cpu = Cpu {
-            registers: [0; REGISTERS_COUNT],
-            memory: Memory::new(),
-        };
-
-        // TODO: remove this after testing.
-        // just a default stack so we don't have to set it up constantly.
-        let bp = cpu.memory.buffer.len() - 20;
-        cpu.registers[BP] = bp as u32;
-
-        let sp = bp - 1000;
-        cpu.registers[SP] = sp as u32;
-
-        return cpu;
-    }
-
-    pub fn run(&mut self) {
-        while (self.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
-            self.cycle();
-        }
-    }
-
-    fn jmp(&mut self) {
-        let addr = self.next_long();
-        self.registers[IP] = addr;
-    }
-    
-    fn jg(&mut self) {
-        let lhs = self.registers[0];
-        let rhs = self.registers[1];
-        let addr = self.next_long();
-        if lhs > rhs {
-            self.registers[IP] = addr;
-        }
-    }
-    fn jl(&mut self) {
-        let lhs = self.registers[0];
-        let rhs = self.registers[1];
-        let addr = self.next_long();
-        if lhs < rhs {
-            self.registers[IP] = addr;
-        }
-    }
-    
-    
-    fn je(&mut self) {
-        let lhs = self.registers[0];
-        let rhs = self.registers[1];
-        let addr = self.next_long();
-        if lhs == rhs {
-            self.registers[IP] = addr;
-        }
-    }
-
-    fn jne(&mut self) {
-        let lhs = self.registers[0];
-        let rhs = self.registers[1];
-        let addr = self.next_long();
-        if lhs != rhs {
-            self.registers[IP] = addr;
-        }
-    }
-
+// Comparisons
+impl Cpu {
     fn cmp(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::CompareByteImm => {
@@ -232,16 +189,6 @@ impl Cpu {
             _ => panic!("invalid compare"),
         }
     }
-
-    fn jmp_reg(&mut self) {
-        let index = self.next_byte() as usize;
-        let addr = self.registers[index];
-        self.registers[IP] = addr;
-    }
-    
-}
-
-impl Cpu {
     pub fn and(&mut self, op: &Opcode) {
         match op {
             Opcode::AndByteImm => {
@@ -299,6 +246,51 @@ impl Cpu {
                 panic!("invalid and instruction");
             }
         }
+    }
+}
+
+// Jumps
+impl Cpu {
+    fn jmp(&mut self) {
+        let addr = self.next_long();
+        self.registers[IP] = addr;
+    }
+    fn jg(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs > rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    fn jl(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs < rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    fn je(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs == rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    fn jne(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs != rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    fn jmp_reg(&mut self) {
+        let index = self.next_byte() as usize;
+        let addr = self.registers[index];
+        self.registers[IP] = addr;
     }
 }
 
@@ -427,7 +419,6 @@ impl Cpu {
 
 // Arithmetic 
 impl Cpu {
-    
     pub fn arith_long(&mut self, opcode: &Opcode) {
         let lhs = self.registers[0];
         match opcode {
@@ -510,7 +501,6 @@ impl Cpu {
             }
         }
     }
-    
     pub fn arith_short(&mut self, opcode: &Opcode) {
         let lhs = (self.registers[0] & 0xFFFF) as u16;
         match opcode {
@@ -593,7 +583,6 @@ impl Cpu {
             }
         }
     }
-    
     pub fn arith_byte(&mut self, opcode: &Opcode) {
         let lhs = (self.registers[0] & 0xFF) as u8;
         match opcode {
@@ -676,10 +665,9 @@ impl Cpu {
             }
         }
     }
-    
 }
 
-//Move
+// Move
 impl Cpu {
     pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
