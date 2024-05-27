@@ -668,146 +668,142 @@ impl Cpu {
     pub fn mov(&mut self, opcode: &Opcode) {
         match opcode {
             Opcode::MoveImmRegByte => {
-                let index = self.next_byte() as usize;
-                let value = self.next_byte();
-                self.validate_register(index);
-                self.registers[index] = value as u32;
+                let dst_reg = self.next_byte() as usize;
+                let src_val = self.next_byte();
+                self.validate_register(dst_reg);
+                self.registers[dst_reg] = src_val as u32;
             }
             Opcode::MoveImmRegLong => {
-                let index = self.next_byte() as usize;
-                let value = self.next_long();
-                self.validate_register(index);
-                self.registers[index] = value;
+                let dst_reg = self.next_byte() as usize;
+                let src_val = self.next_long();
+                self.validate_register(dst_reg);
+                self.registers[dst_reg] = src_val;
             }
             Opcode::MoveImmRegShort => {
-                let index = self.next_byte() as usize;
-                let value = self.next_short();
-                self.validate_register(index);
-                self.registers[index] = value as u32;
+                let dst_reg = self.next_byte() as usize;
+                let src_val = self.next_short();
+                self.validate_register(dst_reg);
+                self.registers[dst_reg] = src_val as u32;
             }
             Opcode::MoveRegRegLong => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_byte() as usize;
-                self.validate_registers(&[dest, src]);
-                self.registers[dest] = self.registers[src];
+                let dst_reg = self.next_byte() as usize;
+                let src_reg = self.next_byte() as usize;
+                self.validate_registers(&[dst_reg, src_reg]);
+                self.registers[dst_reg] = self.registers[src_reg];
             }
             Opcode::MoveRegRegByte => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_byte() as usize;
-                self.validate_registers(&[dest, src]);
-                self.registers[dest] = self.registers[src] & 0xFF;
+                let dst_reg = self.next_byte() as usize;
+                let src_reg = self.next_byte() as usize;
+                self.validate_registers(&[dst_reg, src_reg]);
+                self.registers[dst_reg] = self.registers[src_reg] & 0xFF;
             }
             Opcode::MoveRegRegShort => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_byte() as usize;
-                self.validate_registers(&[dest, src]);
-                self.registers[dest] = self.registers[src] & 0xFFFF;
+                let dst_reg = self.next_byte() as usize;
+                let src_reg = self.next_byte() as usize;
+                self.validate_registers(&[dst_reg, src_reg]);
+                self.registers[dst_reg] = self.registers[src_reg] & 0xFFFF;
             }
             Opcode::MoveRegMemShort => {
-                let dest = self.next_long() as usize;
-                let src = self.next_byte() as usize;
-                self.memory.set_short(dest, self.registers[src] as u16);
+                let dst_adr = self.next_long() as usize;
+                let src_reg = self.next_byte() as usize;
+                self.memory.set_short(dst_adr, self.registers[src_reg] as u16);
             }
             Opcode::MoveMemRegShort => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                self.registers[dest] = self.memory.short(src) as u32;
+                let dst_reg = self.next_byte() as usize;
+                let src_adr = self.next_long() as usize;
+                self.registers[dst_reg] = self.memory.short(src_adr) as u32;
             }
             Opcode::MoveMemMemShort => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let value = self.memory.short(src);
-                self.memory.set_short(dest, value);
+                let dst_adr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let src_val = self.memory.short(src_adr);
+                self.memory.set_short(dst_adr, src_val);
             }
             Opcode::MoveMemIndirectByte => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.byte(addr);
-                self.memory.set_byte(dest, value);
+                let dst_idr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                let src_val = self.memory.byte(src_adr);
+                self.memory.set_byte(dst_adr, src_val);
             }
             Opcode::MoveRegIndirectByte => {
-                let idx = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.byte(addr);
-                self.registers[idx] = value as u32;
+                let dst_idr = self.next_long() as usize;
+                let src_reg = self.next_byte() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                self.memory.set_byte(dst_adr, self.registers[src_reg] as u8);
             }
             Opcode::MoveMemIndirectShort => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.short(addr);
-                self.memory.set_short(dest, value);
+                let dst_idr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                let src_val = self.memory.short(src_adr);
+                self.memory.set_short(dst_adr, src_val);
             }
             Opcode::MoveRegIndirectShort => {
-                let idx = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.short(addr);
-                self.registers[idx] = value as u32;
+                let dst_idr = self.next_long() as usize;
+                let src_reg = self.next_byte() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                self.memory.set_short(dst_adr, self.registers[src_reg] as u16);
             }
             Opcode::MoveMemIndirectLong => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.long(addr);
-                self.memory.set_long(dest, value);
+                let dst_idr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                let src_val = self.memory.long(src_adr);
+                self.memory.set_long(dst_adr, src_val);
             }
             Opcode::MoveRegIndirectLong => {
-                let idx = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                let addr = self.memory.long(src) as usize;
-                let value = self.memory.long(addr);
-                self.registers[idx] = value;
+                let dst_idr = self.next_long() as usize;
+                let src_reg = self.next_byte() as usize;
+                let dst_adr = self.memory.long(dst_idr) as usize;
+                self.memory.set_long(dst_adr, self.registers[src_reg]);
             }
             Opcode::MoveImmMemByte => {
-                let addr = self.next_long() as usize;
-                let value = self.next_byte();
-                self.memory.set_byte(addr, value);
+                let dst_adr = self.next_long() as usize;
+                let src_val = self.next_byte();
+                self.memory.set_byte(dst_adr, src_val);
             }
             Opcode::MoveImmMemShort => {
-                let addr = self.next_long() as usize;
-                let value = self.next_short();
-                self.memory.set_short(addr, value);
+                let dst_adr = self.next_long() as usize;
+                let src_val = self.next_short();
+                self.memory.set_short(dst_adr, src_val);
             }
             Opcode::MoveImmMemLong => {
-                let addr = self.next_long() as usize;
-                let value = self.next_long();
-                self.memory.set_long(addr, value);
+                let dst_adr = self.next_long() as usize;
+                let src_val = self.next_long();
+                self.memory.set_long(dst_adr, src_val);
             }
             Opcode::MoveRegMemLong => {
-                let dest = self.next_long() as usize;
-                let src = self.next_byte() as usize;
-                self.memory.set_long(dest, self.registers[src]);
+                let dst_adr = self.next_long() as usize;
+                let src_reg = self.next_byte() as usize;
+                self.memory.set_long(dst_adr, self.registers[src_reg]);
             }
             Opcode::MoveMemRegLong => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                self.registers[dest] = self.memory.long(src);
+                let dst_reg = self.next_byte() as usize;
+                let src_adr = self.next_long() as usize;
+                self.registers[dst_reg] = self.memory.long(src_adr);
             }
             Opcode::MoveMemMemLong => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let value = self.memory.long(src);
-                self.memory.set_long(dest, value);
+                let dst_adr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let src_val = self.memory.long(src_adr);
+                self.memory.set_long(dst_adr, src_val);
             }
-
             Opcode::MoveMemRegByte => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                self.registers[dest] = self.memory.byte(src) as u32;
+                let dst_reg = self.next_byte() as usize;
+                let src_adr = self.next_long() as usize;
+                self.registers[dst_reg] = self.memory.byte(src_adr) as u32;
             }
             Opcode::MoveMemMemByte => {
-                let dest = self.next_long() as usize;
-                let src = self.next_long() as usize;
-                let value = self.memory.byte(src);
-                self.memory.set_byte(dest, value);
+                let dst_adr = self.next_long() as usize;
+                let src_adr = self.next_long() as usize;
+                let src_val = self.memory.byte(src_adr);
+                self.memory.set_byte(dst_adr, src_val);
             }
             Opcode::MoveRegMemByte => {
-                let dest = self.next_byte() as usize;
-                let src = self.next_long() as usize;
-                self.memory.set_long(dest, self.registers[src]);
+                let dst_reg = self.next_byte() as usize;
+                let src_adr = self.next_long() as usize;
+                self.memory.set_long(dst_reg, self.registers[src_adr]);
             }
             _ => {
                 panic!("Invalid move opcode");
