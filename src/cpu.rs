@@ -169,7 +169,25 @@ impl Cpu {
         let addr = self.next_long();
         self.registers[IP] = addr;
     }
-
+    
+    fn jg(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs > rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    fn jl(&mut self) {
+        let lhs = self.registers[0];
+        let rhs = self.registers[1];
+        let addr = self.next_long();
+        if lhs < rhs {
+            self.registers[IP] = addr;
+        }
+    }
+    
+    
     fn je(&mut self) {
         let lhs = self.registers[0];
         let rhs = self.registers[1];
@@ -224,7 +242,7 @@ impl Cpu {
 }
 
 impl Cpu {
-    pub fn and_byte(&mut self, op: &Opcode) {
+    pub fn and(&mut self, op: &Opcode) {
         match op {
             Opcode::AndByteImm => {
                 let lhs = (self.registers[0] & 0xFF) as u8;
@@ -282,8 +300,6 @@ impl Cpu {
             }
         }
     }
-    pub fn or(&mut self, _op: &Opcode) {}
-    pub fn xor(&mut self, _op: &Opcode) {}
 }
 
 // Stack
@@ -902,7 +918,7 @@ impl Cpu {
                 // push return address
                 self.dec_sp(4);
                 let addr = self.next_long();
-                self.memory.set_long(self.sp(), self.ip() as u32 + 1);
+                self.memory.set_long(self.sp(), self.ip() as u32);
 
                 self.registers[IP] = addr;
             }
@@ -925,7 +941,14 @@ impl Cpu {
             Opcode::JumpImm => {
                 self.jmp();
             }
-
+            
+            Opcode::JumpLess => {
+                self.jl();
+            }
+            Opcode::JumpGreater =>{
+                self.jg();
+            }
+            
             Opcode::CompareReg
             | Opcode::CompareByteImm
             | Opcode::CompareShortImm
@@ -968,7 +991,7 @@ impl Cpu {
             | Opcode::AndLongMem
             | Opcode::AndByteImm
             | Opcode::AndByteReg
-            | Opcode::AndByteMem => self.and_byte(&opcode),
+            | Opcode::AndByteMem => self.and(&opcode),
 
             Opcode::AddByteImm
             | Opcode::AddByteReg
@@ -1057,8 +1080,9 @@ impl Cpu {
             Opcode::Hlt => {
                 self.registers[FLAGS] = (self.flags() | Cpu::HALT_FLAG) as u32;
             }
-            _ => {
-                panic!("Invalid opcode : {instruction}");
+            
+            Opcode::Nop => {
+                
             }
         }
     }
