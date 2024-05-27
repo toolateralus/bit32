@@ -771,8 +771,66 @@ mod tests {
 
             assert_ne!(cpu.registers[0], 255);
         }
+    
+        #[test]
+        fn test_jl() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 11;
+            
+            
+            cpu.load_program(&[
+                // 0
+                Opcode::JumpLess as u8, 
+                // 4
+                7, 0, 0, 0, 
+                // 5
+                0,
+                // 6
+                0,
+                // 7
+                Opcode::MoveImmRegByte as u8,
+                // eax
+                0,
+                // 100
+                100
+            ]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 100);
+        }
+        
+        #[test]
+        fn test_jg() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 12;
+            cpu.registers[1] = 10;
+            
+            
+            cpu.load_program(&[
+                // 0
+                Opcode::JumpGreater as u8, 
+                // 4
+                7, 0, 0, 0, 
+                // 5
+                0,
+                // 6
+                0,
+                // 7
+                Opcode::MoveImmRegByte as u8,
+                // eax
+                0,
+                // 100
+                100
+            ]);
+            cpu.run();
+            
+            assert_eq!(cpu.registers[0], 100);
+        }
+        
+    
     }
-
+    
     mod compare_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]

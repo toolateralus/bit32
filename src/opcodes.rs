@@ -125,6 +125,8 @@ pub enum Opcode {
     // Jumps
     JumpEqual,
     JumpNotEqual,
+    JumpGreater,
+    JumpLess,
     JumpImm,
     JumpReg,
 
