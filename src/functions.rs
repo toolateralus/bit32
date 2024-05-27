@@ -3,7 +3,8 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 pub fn print(cpu: &mut Cpu) {
-    let string = cpu.next_utf8().unwrap();
+    let addr = cpu.registers[0];
+    let string = cpu.memory.utf8(addr as usize).unwrap();
     let mut file = OpenOptions::new().append(true).open("logs.txt").unwrap();
     writeln!(file, "{}", string).unwrap();
 }

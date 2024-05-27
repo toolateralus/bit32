@@ -3,6 +3,7 @@ use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
 use std::io::Read;
+use std::str::Utf8Error;
 
 const REGISTERS_COUNT: usize = 21;
 
@@ -43,11 +44,24 @@ impl Memory {
         let high = self.short(addr + 2) as u32;
         return (high << 16) | low;
     }
-    pub fn set_long(&mut self, addr: usize, value: u32) {
-        self.set_short(addr, value as u16);
-        self.set_short(addr + 2, (value >> 16) as u16);
+    pub fn utf8(&mut self, addr: usize) -> Result<String, Utf8Error> {
+        let mut bytes = Vec::new();
+        let mut i = addr;
+        loop {
+            let b = self.byte(i);
+            i += 1;
+            if b == 0 {
+                break;
+            }
+            bytes.push(b);
+        }
+        std::str::from_utf8(&bytes).map(|s| s.to_string())
     }
-
+    
+    pub fn set_long(&mut self, addr: usize, value: u32) {
+    self.set_short(addr, value as u16);
+    self.set_short(addr + 2, (value >> 16) as u16);
+    }
     pub fn set_short(&mut self, addr: usize, value: u16) {
         self.set_byte(addr, value as u8);
         self.set_byte(addr + 1, (value >> 8) as u8);
@@ -253,14 +267,14 @@ impl Cpu {
 impl Cpu {
     fn jmp(&mut self) {
         let addr = self.next_long();
-        self.registers[IP] = addr;
+        self.registers[IP] = self.registers[IP].wrapping_add(addr);
     }
     fn jg(&mut self) {
         let lhs = self.registers[0];
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs > rhs {
-            self.registers[IP] = addr;
+            self.registers[IP] = self.registers[IP].wrapping_add(addr);
         }
     }
     fn jl(&mut self) {
@@ -268,7 +282,7 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs < rhs {
-            self.registers[IP] = addr;
+            self.registers[IP] = self.registers[IP].wrapping_add(addr);
         }
     }
     fn je(&mut self) {
@@ -276,7 +290,7 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs == rhs {
-            self.registers[IP] = addr;
+            self.registers[IP] = self.registers[IP].wrapping_add(addr);
         }
     }
     fn jne(&mut self) {
@@ -284,13 +298,13 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs != rhs {
-            self.registers[IP] = addr;
+            self.registers[IP] = self.registers[IP].wrapping_add(addr);
         }
     }
     fn jmp_reg(&mut self) {
         let index = self.next_byte() as usize;
         let addr = self.registers[index];
-        self.registers[IP] = addr;
+        self.registers[IP] = self.registers[IP].wrapping_add(addr);
     }
 }
 
@@ -833,16 +847,10 @@ impl Cpu {
         let high = self.next_short() as u32;
         return (high << 16) | low;
     }
-    pub fn next_utf8(&mut self) -> Result<String, std::str::Utf8Error> {
-        let mut bytes = Vec::new();
-        loop {
-            let b = self.next_byte();
-            if b == 0 {
-                break;
-            }
-            bytes.push(b);
-        }
-        std::str::from_utf8(&bytes).map(|s| s.to_string())
+    pub fn next_utf8(&mut self) -> String {
+        let string = self.memory.utf8(self.ip()).unwrap();
+        self.inc_ip(string.len() as u32);
+        return string;
     }
 }
 
