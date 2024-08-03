@@ -617,23 +617,12 @@ mod tests {
         #[test]
         fn test_jump() {
             let mut cpu = Cpu::new();
-            cpu.load_program(&[
-                Opcode::JumpImm as u8, // 0
-                10, // 1
-                0, // 2
-                0, // 3
-                0, // 4
-                0, // 5
-                0, // 6
-                0, // 7
-                0, // 8
-                0, // 9
-                Opcode::MoveImmRegByte as u8, // 10
-                0, // 11
-                255, // 12
-            ]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpImm as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
         
         
@@ -641,23 +630,12 @@ mod tests {
         fn test_jump_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
-            cpu.load_program(&[
-                Opcode::JumpReg as u8,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
-            ]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpReg as u8);
+            program.push(0);
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
 
         #[test]
@@ -665,27 +643,12 @@ mod tests {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
-
-            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
-            cpu.load_program(&[
-                Opcode::JumpNotEqual as u8,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
-            ]);
-
-            cpu.run();
-
-            assert_eq!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpNotEqual as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
 
         #[test]
@@ -693,28 +656,13 @@ mod tests {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
-
-            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
-            // we expect this to nto happen, so cpu reg 0 will not equal 255.
-            cpu.load_program(&[
-                Opcode::JumpNotEqual as u8,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
-            ]);
-
-            cpu.run();
-
-            assert_ne!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpNotEqual as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
 
         #[test]
@@ -722,27 +670,12 @@ mod tests {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
-
-            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
-            cpu.load_program(&[
-                Opcode::JumpEqual as u8,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
-            ]);
-
-            cpu.run();
-
-            assert_eq!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpEqual as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
 
         #[test]
@@ -750,83 +683,91 @@ mod tests {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
-
-            // jump to the MovImmRegByte and if it succeeds, load 255 into register A (0)
-            cpu.load_program(&[
-                Opcode::JumpEqual as u8,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
-            ]);
-
-            cpu.run();
-
-            assert_ne!(cpu.registers[0], 255);
+            let mut program = vec![];
+            program.push(Opcode::JumpEqual as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
     
         #[test]
-        fn test_jl() {
+        fn test_jl_when_less() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
-            
-            
-            cpu.load_program(&[
-                // 0
-                Opcode::JumpLess as u8, 
-                // 4
-                7, 0, 0, 0, 
-                // 5
-                0,
-                // 6
-                0,
-                // 7
-                Opcode::MoveImmRegByte as u8,
-                // eax
-                0,
-                // 100
-                100
-            ]);
-            cpu.run();
-            
-            assert_eq!(cpu.registers[0], 100);
+            let mut program = vec![];
+            program.push(Opcode::JumpLess as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
+        }
+        #[test]
+        fn test_jl_when_eq() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 10;
+            let mut program = vec![];
+            program.push(Opcode::JumpLess as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
+        }
+        #[test]
+        fn test_jl_when_gr() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 9;
+            let mut program = vec![];
+            program.push(Opcode::JumpLess as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
         
         #[test]
-        fn test_jg() {
+        fn test_jg_when_less() {
             let mut cpu = Cpu::new();
-            cpu.registers[0] = 12;
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 11;
+            let mut program = vec![];
+            program.push(Opcode::JumpGreater as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
+        }
+        #[test]
+        fn test_jg_when_eq() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
             cpu.registers[1] = 10;
-            
-            
-            cpu.load_program(&[
-                // 0
-                Opcode::JumpGreater as u8, 
-                // 4
-                7, 0, 0, 0, 
-                // 5
-                0,
-                // 6
-                0,
-                // 7
-                Opcode::MoveImmRegByte as u8,
-                // eax
-                0,
-                // 100
-                100
-            ]);
-            cpu.run();
-            
-            assert_eq!(cpu.registers[0], 100);
+            let mut program = vec![];
+            program.push(Opcode::JumpGreater as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            let no_jmp_addr = program.len() as u32;
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
+        }
+        #[test]
+        fn test_jg_when_gr() {
+            let mut cpu = Cpu::new();
+            cpu.registers[0] = 10;
+            cpu.registers[1] = 9;
+            let mut program = vec![];
+            program.push(Opcode::JumpGreater as u8);
+            program.extend_from_slice(&10_u32.to_le_bytes());
+            cpu.load_program(program.as_slice());
+            cpu.cycle();
+            assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
         
     
