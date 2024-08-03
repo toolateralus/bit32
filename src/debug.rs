@@ -2,11 +2,11 @@ use crossterm::{
     cursor,
     event::{self, KeyModifiers},
     execute, queue,
-    style::Print,
-    terminal,
+    style::{self, Print},
+    terminal::{self},
 };
 use std::{
-    io::{stdout, Write},
+    io::{stdout, Stdout, Write},
     thread,
     time::Duration,
 };
@@ -59,18 +59,21 @@ impl Debugger {
         execute!(stdout, cursor::Hide).unwrap();
         execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
 
-        let mut state: DebugState = DebugState::Executing;
+        let mut state: DebugState = DebugState::Pause;
         let start_time = std::time::Instant::now();
         let mut cycle_count = 0;
 
         while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
+            execute!(stdout, cursor::MoveTo(0, 25)).unwrap();
+            self.display_legend();
+            execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
             cpu.cycle();
             cycle_count += 1;
             self.input(&mut state);
             match state {
                 DebugState::Executing | DebugState::Step | DebugState::Continue => {}
                 DebugState::Pause => {
-                    self.pause(&mut cpu, &mut state);
+                    self.pause(&mut cpu, &mut state, &mut stdout);
                 }
 
                 DebugState::Reset => {}
@@ -87,7 +90,7 @@ impl Debugger {
         println!("\n\x1b[;032]RESULT::\n\n\t{:?}", cpu);
     }
 
-    pub fn pause(&self, cpu: &mut Cpu, state: &mut DebugState) {
+    pub fn pause(&self, cpu: &mut Cpu, state: &mut DebugState, stdout: &mut Stdout) {
         loop {
             self.input(state);
             match state {
@@ -105,6 +108,7 @@ impl Debugger {
                     cpu.memory = Memory::new();
                     cpu.load_program_from_file(self.file.as_str()).unwrap();
                     *state = DebugState::Pause;
+                    execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
                     return;
                 }
                 DebugState::Abort => {
@@ -136,6 +140,78 @@ impl Debugger {
         queue!(
             stdout,
             Print(format!("CPU Speed: {:.2} MHz", clock_speed_mhz))
+        )
+        .unwrap();
+
+        stdout.flush().unwrap();
+    }
+    pub fn display_legend(&self) {
+        let mut stdout = stdout();
+        execute!(
+            stdout,
+            style::SetForegroundColor(style::Color::White),
+            style::Print("Controls:\n"),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("1"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Execute "),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("2"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Pause "),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("3"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Step "),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("4"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Continue "),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("5"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Reset "),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("["),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::SetAttribute(style::Attribute::Bold),
+            style::Print("Ctrl+C"),
+            style::SetAttribute(style::Attribute::Reset),
+            style::SetForegroundColor(style::Color::White),
+            style::Print("]"),
+            style::SetForegroundColor(style::Color::Cyan),
+            style::Print(" Abort\n"),
+            style::ResetColor
         )
         .unwrap();
 
