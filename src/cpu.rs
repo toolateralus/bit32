@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::io::Read;
 use std::str::Utf8Error;
 
-const REGISTERS_COUNT: usize = 22;
+const NUM_REGISTERS: usize = 22;
 
 #[allow(dead_code)]
 pub const IDT: usize = 21;
@@ -77,9 +77,11 @@ impl Memory {
 }
 
 pub struct Cpu {
-    pub registers: [u32; REGISTERS_COUNT],
+    pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
+    pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send>>,
 }
+
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registers = format!(
@@ -117,13 +119,17 @@ impl Debug for Cpu {
 
 // General, register helpers.
 impl Cpu {
-    pub const HALT_FLAG: u8 = 0x01;
-    pub const INTERRUPT_FLAG: u8 = 0x02;
-
+    pub const VGA_BUFFER_LEN: usize = 320 * 200 * 2; // Each character has 2 bytes (char + color)
+    pub const VGA_BUFFER_ADDRESS: usize = 0xA0000;
+    
+    pub const HALT_FLAG: u32 = 0x01;
+    pub const INTERRUPT_FLAG: u32 = 0x02;
+    
     pub fn new() -> Self {
         let mut cpu = Cpu {
-            registers: [0; REGISTERS_COUNT],
+            registers: [0; NUM_REGISTERS],
             memory: Memory::new(),
+            hardware_interrupt_routine: None,
         };
 
         // TODO: remove this after testing.
@@ -133,16 +139,22 @@ impl Cpu {
 
         let sp = bp - 1000;
         cpu.registers[SP] = sp as u32;
-
+        
+        for i in (Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN).step_by(2) {
+            cpu.memory.buffer[i] = b' ';
+            cpu.memory.buffer[i + 1] = 0x0;
+        }
+        
         return cpu;
     }
+    
     pub fn run(&mut self) {
         while (self.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
             self.cycle();
         }
     }
-    pub fn flags(&self) -> u8 {
-        self.registers[FLAGS] as u8
+    pub fn flags(&self) -> u32 {
+        self.registers[FLAGS] as u32
     }
     pub fn sp(&self) -> usize {
         self.registers[SP] as usize
@@ -177,6 +189,7 @@ impl Cpu {
             panic!("instruction pointer overflow.");
         }
     }
+
 }
 
 // Comparisons
@@ -1145,6 +1158,8 @@ impl Cpu {
 
 // General, Cycle, Load Program
 impl Cpu {
+    
+    
     pub fn reg_index_to_str(index: &usize) -> &str {
         match index {
             0 => "rax",
@@ -1176,12 +1191,12 @@ impl Cpu {
             }
         }
     }
-
+    
     pub fn load_program(&mut self, program: &[u8]) {
         let iter = program.iter().cloned();
         self.memory.buffer.splice(0..program.len(), iter);
     }
-
+    
     pub fn load_program_from_file(&mut self, file_path: &str) -> std::io::Result<()> {
         let mut file = std::fs::File::open(file_path)?;
         let mut buffer = Vec::new();
@@ -1191,17 +1206,30 @@ impl Cpu {
         let prog = &self.memory.buffer[..buffer.len()];
 
         println!("loaded program: {:?}", prog);
-
+        
         Ok(())
     }
-
+    
     pub fn cycle(&mut self) {
+        
+        let flags = self.registers[FLAGS];
+
+        // Extract the function pointer to avoid borrowing issues
+        if flags & Cpu::INTERRUPT_FLAG == Cpu::INTERRUPT_FLAG {
+            if let Some(hw_interrupt) = self.hardware_interrupt_routine.take() {
+                hw_interrupt(self);
+                self.hardware_interrupt_routine = None;
+            }
+        }
+        
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
+        
+        
         log_opcode(&opcode);
         match opcode {
             Opcode::Interrupt => {
-                if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32 != 0 {
+                if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32  != Cpu::INTERRUPT_FLAG as u32 {
                     return;
                 }
                 
@@ -1216,13 +1244,11 @@ impl Cpu {
                 // push return address
                 self.dec_sp(4);
                 self.memory.set_long(self.sp(), self.ip() as u32);
-                self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
                 self.registers[IP] = self.memory.long(isr_addr as usize);
             }
             Opcode::InterruptReturn => {
                 let ret_addr = self.memory.long(self.sp());
                 self.inc_sp(4);
-                self.registers[FLAGS] &= !(Cpu::INTERRUPT_FLAG as u32);
                 self.registers[IP] = ret_addr;
             }
             Opcode::Call => {
