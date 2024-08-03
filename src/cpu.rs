@@ -1204,9 +1204,9 @@ impl Cpu {
                 if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32 != 0 {
                     return;
                 }
-
+                
                 let irq = self.next_byte() as u32;
-
+                
                 // get the base of the idt
                 let idt_base = self.registers[IDT] as u32;
 
@@ -1217,7 +1217,7 @@ impl Cpu {
                 self.dec_sp(4);
                 self.memory.set_long(self.sp(), self.ip() as u32);
                 self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
-                self.registers[IP] = isr_addr;
+                self.registers[IP] = self.memory.long(isr_addr as usize);
             }
             Opcode::InterruptReturn => {
                 let ret_addr = self.memory.long(self.sp());
