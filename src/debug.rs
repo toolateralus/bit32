@@ -64,9 +64,9 @@ impl Debugger {
         let mut cycle_count = 0;
 
         while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
-            execute!(stdout, cursor::MoveTo(0,25)).unwrap();
+            execute!(stdout, cursor::MoveTo(0, 25)).unwrap();
             self.display_legend();
-            execute!(stdout, cursor::MoveTo(0,0)).unwrap();
+            execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
             cpu.cycle();
             cycle_count += 1;
             self.input(&mut state);

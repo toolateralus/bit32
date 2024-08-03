@@ -3,8 +3,12 @@ use crate::opcodes::Opcode;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 
-pub fn get_or_create_log_file() -> File { 
-    OpenOptions::new().append(true).create(true).open("logs.txt").unwrap()
+pub fn get_or_create_log_file() -> File {
+    OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("logs.txt")
+        .unwrap()
 }
 
 pub fn print(cpu: &mut Cpu) {
@@ -24,7 +28,12 @@ pub fn log_memory(cpu: &mut Cpu) {
     let end_idx = cpu.registers[1] as usize;
     let mut file = get_or_create_log_file();
     if start_idx > end_idx {
-        writeln!(file, "log memory got invalid start and end index. {} to {}", start_idx, end_idx).unwrap();    
+        writeln!(
+            file,
+            "log memory got invalid start and end index. {} to {}",
+            start_idx, end_idx
+        )
+        .unwrap();
         return;
     }
     let range = &cpu.memory.buffer[start_idx..end_idx];

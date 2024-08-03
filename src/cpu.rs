@@ -59,10 +59,10 @@ impl Memory {
         }
         std::str::from_utf8(&bytes).map(|s| s.to_string())
     }
-    
+
     pub fn set_long(&mut self, addr: usize, value: u32) {
-    self.set_short(addr, value as u16);
-    self.set_short(addr + 2, (value >> 16) as u16);
+        self.set_short(addr, value as u16);
+        self.set_short(addr + 2, (value >> 16) as u16);
     }
     pub fn set_short(&mut self, addr: usize, value: u16) {
         self.set_byte(addr, value as u8);
@@ -119,7 +119,7 @@ impl Debug for Cpu {
 impl Cpu {
     pub const HALT_FLAG: u8 = 0x01;
     pub const INTERRUPT_FLAG: u8 = 0x02;
-    
+
     pub fn new() -> Self {
         let mut cpu = Cpu {
             registers: [0; REGISTERS_COUNT],
@@ -133,7 +133,7 @@ impl Cpu {
 
         let sp = bp - 1000;
         cpu.registers[SP] = sp as u32;
-        
+
         return cpu;
     }
     pub fn run(&mut self) {
@@ -435,7 +435,7 @@ impl Cpu {
     }
 }
 
-// Arithmetic 
+// Arithmetic
 impl Cpu {
     pub fn arith_long(&mut self, opcode: &Opcode) {
         let lhs = self.registers[0];
@@ -810,21 +810,24 @@ impl Cpu {
                 self.memory.set_long(dst_adr + self.ip(), src_val);
             }
 
-            // from register 
+            // from register
             Opcode::MoveRegMemByte => {
                 let dst_adr = self.next_long() as usize;
                 let src_reg = self.next_byte() as usize;
-                self.memory.set_byte(dst_adr + self.ip(), self.registers[src_reg] as u8);
+                self.memory
+                    .set_byte(dst_adr + self.ip(), self.registers[src_reg] as u8);
             }
             Opcode::MoveRegMemShort => {
                 let dst_adr = self.next_long() as usize;
                 let src_reg = self.next_byte() as usize;
-                self.memory.set_short(dst_adr + self.ip(), self.registers[src_reg] as u16);
+                self.memory
+                    .set_short(dst_adr + self.ip(), self.registers[src_reg] as u16);
             }
             Opcode::MoveRegMemLong => {
                 let dst_adr = self.next_long() as usize;
                 let src_reg = self.next_byte() as usize;
-                self.memory.set_long(dst_adr + self.ip(), self.registers[src_reg]);
+                self.memory
+                    .set_long(dst_adr + self.ip(), self.registers[src_reg]);
             }
 
             // from relative memory
@@ -911,7 +914,7 @@ impl Cpu {
                 self.memory.set_long(dst_adr, src_val);
             }
 
-            // from register 
+            // from register
             Opcode::MoveRegAbsByte => {
                 let dst_adr = self.next_long() as usize;
                 let src_reg = self.next_byte() as usize;
@@ -920,7 +923,8 @@ impl Cpu {
             Opcode::MoveRegAbsShort => {
                 let dst_adr = self.next_long() as usize;
                 let src_reg = self.next_byte() as usize;
-                self.memory.set_short(dst_adr, self.registers[src_reg] as u16);
+                self.memory
+                    .set_short(dst_adr, self.registers[src_reg] as u16);
             }
             Opcode::MoveRegAbsLong => {
                 let dst_adr = self.next_long() as usize;
@@ -1026,7 +1030,8 @@ impl Cpu {
                 let dst_reg = self.next_byte() as usize;
                 let src_reg = self.next_byte() as usize;
                 let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_short(dst_adr, self.registers[src_reg] as u16);
+                self.memory
+                    .set_short(dst_adr, self.registers[src_reg] as u16);
             }
             Opcode::MoveRegIndirectLong => {
                 let dst_reg = self.next_byte() as usize;
@@ -1152,7 +1157,7 @@ impl Cpu {
             7 => "rhx",
             8 => "rzx",
             9 => "rwx",
-            
+
             10 => "r9",
             11 => "r10",
             12 => "r11",
@@ -1160,7 +1165,7 @@ impl Cpu {
             14 => "r13",
             15 => "r14",
             16 => "r15",
-            
+
             17 => "flags",
             18 => "bp",
             19 => "ip",
@@ -1197,23 +1202,22 @@ impl Cpu {
         match opcode {
             Opcode::Interrupt => {
                 if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32 != 0 {
-                    return;                    
+                    return;
                 }
-                
+
                 let irq = self.next_byte() as u32;
-                
+
                 // get the base of the idt
                 let idt_base = self.registers[IDT] as u32;
-                
+
                 // idt entries are exactly 4 bytes long
                 let isr_addr = idt_base + (irq * 4);
-                
+
                 // push return address
                 self.dec_sp(4);
                 self.memory.set_long(self.sp(), self.ip() as u32);
                 self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
                 self.registers[IP] = isr_addr;
-                
             }
             Opcode::InterruptReturn => {
                 let ret_addr = self.memory.long(self.sp());
@@ -1226,10 +1230,10 @@ impl Cpu {
                 self.dec_sp(4);
                 let addr = self.next_long();
                 self.memory.set_long(self.sp(), self.ip() as u32);
-                
+
                 self.registers[IP] = addr;
             }
-            
+
             Opcode::Return => {
                 // pop return address
                 let addr = self.memory.long(self.sp());
@@ -1249,14 +1253,14 @@ impl Cpu {
             Opcode::JumpImm => {
                 self.jmp();
             }
-            
+
             Opcode::JumpLess => {
                 self.jl();
             }
-            Opcode::JumpGreater =>{
+            Opcode::JumpGreater => {
                 self.jg();
             }
-            
+
             Opcode::CompareReg
             | Opcode::CompareByteImm
             | Opcode::CompareShortImm
@@ -1319,10 +1323,10 @@ impl Cpu {
             | Opcode::MoveImmIndirectShort
             | Opcode::MoveImmIndirectLong
             | Opcode::MoveRegIndirectByte
-            | Opcode::MoveRegIndirectShort 
+            | Opcode::MoveRegIndirectShort
             | Opcode::MoveRegIndirectLong
-            | Opcode::MoveMemIndirectByte 
-            | Opcode::MoveMemIndirectShort 
+            | Opcode::MoveMemIndirectByte
+            | Opcode::MoveMemIndirectShort
             | Opcode::MoveMemIndirectLong
             | Opcode::MoveAbsIndirectByte
             | Opcode::MoveAbsIndirectShort
@@ -1406,11 +1410,10 @@ impl Cpu {
             | Opcode::PopLongReg => {
                 self.pop(&opcode);
             }
-            
-            
+
             Opcode::RustCall => {
                 let idx = self.next_byte() as usize;
-                
+
                 match idx {
                     0 => {
                         functions::log_memory(self);
@@ -1420,20 +1423,15 @@ impl Cpu {
                     }
                     _ => {
                         panic!("invalid rust function: {}", idx);
-                    } 
+                    }
                 }
-                
-                
             }
-            
-            
+
             Opcode::Hlt => {
                 self.registers[FLAGS] = (self.flags() | Cpu::HALT_FLAG) as u32;
             }
-            
-            Opcode::Nop => {
-                
-            }
+
+            Opcode::Nop => {}
         }
     }
 }

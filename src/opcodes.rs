@@ -7,7 +7,7 @@ pub enum Opcode {
     MoveImmRegByte,
     MoveImmRegShort,
     MoveImmRegLong,
-    
+
     MoveRegRegByte,
     MoveRegRegShort,
     MoveRegRegLong,
@@ -23,16 +23,16 @@ pub enum Opcode {
     MoveIndirectRegByte,
     MoveIndirectRegShort,
     MoveIndirectRegLong,
-    
+
     // move to relative memory
     MoveImmMemByte,
     MoveImmMemShort,
     MoveImmMemLong,
-    
+
     MoveRegMemByte,
     MoveRegMemShort,
     MoveRegMemLong,
-    
+
     MoveAbsMemByte,
     MoveAbsMemShort,
     MoveAbsMemLong,
@@ -44,7 +44,7 @@ pub enum Opcode {
     MoveIndirectMemByte,
     MoveIndirectMemShort,
     MoveIndirectMemLong,
-    
+
     // move to absolute memory
     MoveImmAbsByte,
     MoveImmAbsShort,
@@ -65,24 +65,24 @@ pub enum Opcode {
     MoveIndirectAbsByte,
     MoveIndirectAbsShort,
     MoveIndirectAbsLong,
-    
+
     // move to indirect memory
     MoveImmIndirectByte,
     MoveImmIndirectShort,
     MoveImmIndirectLong,
-    
+
     MoveRegIndirectByte,
     MoveRegIndirectShort,
     MoveRegIndirectLong,
-    
+
     MoveAbsIndirectByte,
     MoveAbsIndirectShort,
     MoveAbsIndirectLong,
-    
+
     MoveMemIndirectByte,
     MoveMemIndirectShort,
     MoveMemIndirectLong,
-    
+
     MoveIndirectIndirectByte,
     MoveIndirectIndirectShort,
     MoveIndirectIndirectLong,
@@ -188,7 +188,7 @@ pub enum Opcode {
     CompareLongImm,
 
     CompareReg,
-    
+
     // TODO: implement idt & io ports.
     Interrupt,
     InterruptReturn,
@@ -197,7 +197,7 @@ pub enum Opcode {
     Call,
     Return,
     RustCall,
-    
+
     Nop,
 }
 
