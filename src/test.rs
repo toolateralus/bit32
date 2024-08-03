@@ -12,7 +12,7 @@ mod tests {
             cpu.registers[SP] = 50;
             return cpu;
         }
-
+        
         #[test]
         fn test_push_byte_reg() {
             let mut cpu = create_cpu();
@@ -462,7 +462,7 @@ mod tests {
             cpu.registers[0] = 2;
             cpu.load_program(&[Opcode::MulByteImm as u8, 10]);
             cpu.run();
-
+            
             assert_eq!(cpu.registers[0], 20);
         }
         #[test]
