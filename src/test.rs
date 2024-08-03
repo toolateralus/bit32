@@ -618,19 +618,19 @@ mod tests {
         fn test_jump() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[
-                Opcode::JumpImm as u8,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                Opcode::MoveImmRegByte as u8,
-                0,
-                255,
+                Opcode::JumpImm as u8, // 0
+                10, // 1
+                0, // 2
+                0, // 3
+                0, // 4
+                0, // 5
+                0, // 6
+                0, // 7
+                0, // 8
+                0, // 9
+                Opcode::MoveImmRegByte as u8, // 10
+                0, // 11
+                255, // 12
             ]);
             cpu.run();
             assert_eq!(cpu.registers[0], 255);
@@ -926,7 +926,37 @@ mod tests {
             assert_eq!(cpu.ip(), 6)
         }
     }
+    
+    mod int_tests {
+        use crate::{cpu::{Cpu, FLAGS, IDT}, opcodes::Opcode};
 
+        #[test]
+        fn test_interrupt() {
+            let mut cpu = Cpu::new();
+            
+            // address of idt ptr.
+            cpu.registers[IDT] = 3;
+            
+            cpu.load_program(&[
+                Opcode::Interrupt as u8, 0, // ip : 2
+                Opcode::Hlt as u8,
+                // idt
+                // isr 0 just loads eax and ebx with 10, 15
+                Opcode::MoveImmRegByte as u8, 0, 10,
+                Opcode::MoveImmRegByte as u8, 1, 15,
+                Opcode::InterruptReturn as u8,
+            ]);
+            
+            cpu.run();
+            assert_eq!(cpu.ip(), 3);
+            assert_eq!(cpu.registers[0], 10);
+            assert_eq!(cpu.registers[1], 15);
+            assert_eq!((cpu.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32), 0);
+        }
+        
+        
+    }
+    
     mod mov_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
@@ -1157,3 +1187,4 @@ mod tests {
         }
     }
 }
+

@@ -1,12 +1,14 @@
-use crate::functions;
+use crate::functions::{self, log_opcode};
 use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
 use std::io::Read;
 use std::str::Utf8Error;
 
-const REGISTERS_COUNT: usize = 21;
+const REGISTERS_COUNT: usize = 22;
 
+#[allow(dead_code)]
+pub const IDT: usize = 21;
 #[allow(dead_code)]
 pub const SP: usize = 20;
 #[allow(dead_code)]
@@ -116,6 +118,8 @@ impl Debug for Cpu {
 // General, register helpers.
 impl Cpu {
     pub const HALT_FLAG: u8 = 0x01;
+    pub const INTERRUPT_FLAG: u8 = 0x02;
+    
     pub fn new() -> Self {
         let mut cpu = Cpu {
             registers: [0; REGISTERS_COUNT],
@@ -1161,6 +1165,7 @@ impl Cpu {
             18 => "bp",
             19 => "ip",
             20 => "sp",
+            21 => "idt",
             _ => {
                 panic!("invalid register {index}");
             }
@@ -1188,16 +1193,43 @@ impl Cpu {
     pub fn cycle(&mut self) {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
-
+        log_opcode(&opcode);
         match opcode {
+            Opcode::Interrupt => {
+                if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32 != 0 {
+                    return;                    
+                }
+                
+                let irq = self.next_byte() as u32;
+                
+                // get the base of the idt
+                let idt_base = self.registers[IDT] as u32;
+                
+                // idt entries are exactly 4 bytes long
+                let isr_addr = idt_base + (irq * 4);
+                
+                // push return address
+                self.dec_sp(4);
+                self.memory.set_long(self.sp(), self.ip() as u32);
+                self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
+                self.registers[IP] = self.registers[IP].wrapping_add(isr_addr);
+                
+            }
+            Opcode::InterruptReturn => {
+                let ret_addr = self.memory.long(self.sp());
+                self.inc_sp(4);
+                self.registers[FLAGS] &= !(Cpu::INTERRUPT_FLAG as u32);
+                self.registers[IP] = self.registers[IP].wrapping_add(ret_addr);
+            }
             Opcode::Call => {
                 // push return address
                 self.dec_sp(4);
                 let addr = self.next_long();
                 self.memory.set_long(self.sp(), self.ip() as u32);
-
+                
                 self.registers[IP] = addr;
             }
+            
             Opcode::Return => {
                 // pop return address
                 let addr = self.memory.long(self.sp());
@@ -1388,7 +1420,7 @@ impl Cpu {
                     }
                     _ => {
                         panic!("invalid rust function: {}", idx);
-                    }
+                    } 
                 }
                 
                 
