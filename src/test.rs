@@ -871,7 +871,8 @@ mod tests {
     
     mod int {
         use crate::{cpu::{Cpu, FLAGS, IDT}, opcodes::Opcode};
-
+        
+        
         #[test]
         fn interrupt() {
             let mut cpu = Cpu::new();

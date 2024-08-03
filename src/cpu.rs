@@ -1212,14 +1212,14 @@ impl Cpu {
                 self.dec_sp(4);
                 self.memory.set_long(self.sp(), self.ip() as u32);
                 self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
-                self.registers[IP] = self.registers[IP].wrapping_add(isr_addr);
+                self.registers[IP] = isr_addr;
                 
             }
             Opcode::InterruptReturn => {
                 let ret_addr = self.memory.long(self.sp());
                 self.inc_sp(4);
                 self.registers[FLAGS] &= !(Cpu::INTERRUPT_FLAG as u32);
-                self.registers[IP] = self.registers[IP].wrapping_add(ret_addr);
+                self.registers[IP] = ret_addr;
             }
             Opcode::Call => {
                 // push return address
