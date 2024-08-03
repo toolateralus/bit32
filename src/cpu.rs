@@ -271,14 +271,14 @@ impl Cpu {
 impl Cpu {
     fn jmp(&mut self) {
         let addr = self.next_long();
-        self.registers[IP] = self.registers[IP].wrapping_add(addr);
+        self.registers[IP] = addr;
     }
     fn jg(&mut self) {
         let lhs = self.registers[0];
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs > rhs {
-            self.registers[IP] = self.registers[IP].wrapping_add(addr);
+            self.registers[IP] = addr;
         }
     }
     fn jl(&mut self) {
@@ -286,7 +286,7 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs < rhs {
-            self.registers[IP] = self.registers[IP].wrapping_add(addr);
+            self.registers[IP] = addr;
         }
     }
     fn je(&mut self) {
@@ -294,7 +294,7 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs == rhs {
-            self.registers[IP] = self.registers[IP].wrapping_add(addr);
+            self.registers[IP] = addr;
         }
     }
     fn jne(&mut self) {
@@ -302,13 +302,13 @@ impl Cpu {
         let rhs = self.registers[1];
         let addr = self.next_long();
         if lhs != rhs {
-            self.registers[IP] = self.registers[IP].wrapping_add(addr);
+            self.registers[IP] = addr;
         }
     }
     fn jmp_reg(&mut self) {
         let index = self.next_byte() as usize;
         let addr = self.registers[index];
-        self.registers[IP] = self.registers[IP].wrapping_add(addr);
+        self.registers[IP] = addr;
     }
 }
 
