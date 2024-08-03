@@ -624,7 +624,8 @@ mod tests {
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
-
+        
+        
         #[test]
         fn test_jump_reg() {
             let mut cpu = Cpu::new();
