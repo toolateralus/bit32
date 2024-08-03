@@ -949,9 +949,9 @@ mod tests {
         mod to_reg {
             mod from_imm {
                 use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
-                fn test_move_imm_reg<T>(op: crate::opcodes::Opcode)
+                fn cycle<T>(op: crate::opcodes::Opcode)
                 where
-                    T: Copy + std::fmt::Debug + OurFrom<u32> + Into<u64> + ToLeTrait + Eq,
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
                 {
                     let mut cpu = crate::cpu::Cpu::new();
                     let mut program = vec![];
@@ -965,24 +965,294 @@ mod tests {
                 }
                 #[test]
                 fn byte() {
-                    test_move_imm_reg::<u8>(crate::opcodes::Opcode::MoveImmRegByte);
+                    cycle::<u8>(crate::opcodes::Opcode::MoveImmRegByte);
                 }
                 #[test]
                 fn short() {
-                    test_move_imm_reg::<u16>(crate::opcodes::Opcode::MoveImmRegShort);
+                    cycle::<u16>(crate::opcodes::Opcode::MoveImmRegShort);
                 }
                 #[test]
                 fn long() {
-                    test_move_imm_reg::<u32>(crate::opcodes::Opcode::MoveImmRegLong);
+                    cycle::<u32>(crate::opcodes::Opcode::MoveImmRegLong);
                 }
             }
-            mod from_reg {}
-            mod from_abs {}
-            mod from_mem {}
-            mod from_ind {}
+            mod from_reg {
+                use crate::test::le_bytes_junk::OurFrom;
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + Into<u32> + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    cpu.registers[1] = val.into();
+                    program.push(op as u8);
+                    program.push(0);
+                    program.push(1);
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveRegRegByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveRegRegShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveRegRegLong);
+                }
+            }
+            mod from_abs {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&6_u32.to_le_bytes());
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveAbsRegByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveAbsRegShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveAbsRegLong);
+                }
+            }
+            mod from_mem {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&2_u32.to_le_bytes());
+                    program.push(0);
+                    program.push(0);
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveMemRegByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveMemRegShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveMemRegLong);
+                }
+            }
+            mod from_ind {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.push(1);
+                    cpu.registers[1] = program.len() as u32;
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveIndirectRegByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveIndirectRegShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveIndirectRegLong);
+                }
+            }
         }
-        mod to_rel {}
-        mod to_abs {}
-        mod to_ind {}
+        mod to_abs {
+            mod from_imm {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveImmAbsByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveImmAbsShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveImmAbsLong);
+                }
+            }
+            mod from_reg {
+                use crate::test::le_bytes_junk::OurFrom;
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + Into<u32> + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    cpu.registers[1] = val.into();
+                    program.push(op as u8);
+                    program.push(0);
+                    program.push(1);
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveRegAbsByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveRegAbsShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveRegAbsLong);
+                }
+            }
+            mod from_abs {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&6_u32.to_le_bytes());
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveAbsAbsByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveAbsAbsShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveAbsAbsLong);
+                }
+            }
+            mod from_mem {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&2_u32.to_le_bytes());
+                    program.push(0);
+                    program.push(0);
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveMemAbsByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveMemAbsShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveMemAbsLong);
+                }
+            }
+            mod from_ind {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn cycle<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + ToLeTrait + Eq,
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.push(1);
+                    cpu.registers[1] = program.len() as u32;
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    cycle::<u8>(crate::opcodes::Opcode::MoveIndirectAbsByte);
+                }
+                #[test]
+                fn short() {
+                    cycle::<u16>(crate::opcodes::Opcode::MoveIndirectAbsShort);
+                }
+                #[test]
+                fn long() {
+                    cycle::<u32>(crate::opcodes::Opcode::MoveIndirectAbsLong);
+                }
+            }
+        }
     }
 }
