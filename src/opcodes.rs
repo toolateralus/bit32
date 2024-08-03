@@ -2,38 +2,90 @@
 #[derive(Debug, Clone, Copy)]
 pub enum Opcode {
     Hlt,
-    // Move instructions
+
+    // move to register
     MoveImmRegByte,
     MoveImmRegShort,
     MoveImmRegLong,
     
-    MoveImmMemByte,
-    MoveImmMemShort,
-    MoveImmMemLong,
-    
     MoveRegRegByte,
     MoveRegRegShort,
     MoveRegRegLong,
+
+    MoveAbsRegByte,
+    MoveAbsRegShort,
+    MoveAbsRegLong,
+
+    MoveMemRegByte,
+    MoveMemRegShort,
+    MoveMemRegLong,
+
+    MoveIndirectRegByte,
+    MoveIndirectRegShort,
+    MoveIndirectRegLong,
+    
+    // move to relative memory
+    MoveImmMemByte,
+    MoveImmMemShort,
+    MoveImmMemLong,
     
     MoveRegMemByte,
     MoveRegMemShort,
     MoveRegMemLong,
     
-    MoveMemRegByte,
-    MoveMemRegShort,
-    MoveMemRegLong,
+    MoveAbsMemByte,
+    MoveAbsMemShort,
+    MoveAbsMemLong,
 
     MoveMemMemByte,
     MoveMemMemShort,
     MoveMemMemLong,
+
+    MoveIndirectMemByte,
+    MoveIndirectMemShort,
+    MoveIndirectMemLong,
+    
+    // move to absolute memory
+    MoveImmAbsByte,
+    MoveImmAbsShort,
+    MoveImmAbsLong,
+
+    MoveRegAbsByte,
+    MoveRegAbsShort,
+    MoveRegAbsLong,
+
+    MoveAbsAbsByte,
+    MoveAbsAbsShort,
+    MoveAbsAbsLong,
+
+    MoveMemAbsByte,
+    MoveMemAbsShort,
+    MoveMemAbsLong,
+
+    MoveIndirectAbsByte,
+    MoveIndirectAbsShort,
+    MoveIndirectAbsLong,
+    
+    // move to indirect memory
+    MoveImmIndirectByte,
+    MoveImmIndirectShort,
+    MoveImmIndirectLong,
     
     MoveRegIndirectByte,
     MoveRegIndirectShort,
     MoveRegIndirectLong,
     
+    MoveAbsIndirectByte,
+    MoveAbsIndirectShort,
+    MoveAbsIndirectLong,
+    
     MoveMemIndirectByte,
     MoveMemIndirectShort,
     MoveMemIndirectLong,
+    
+    MoveIndirectIndirectByte,
+    MoveIndirectIndirectShort,
+    MoveIndirectIndirectLong,
 
     // Push
     PushByteImm,
