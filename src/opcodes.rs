@@ -18,7 +18,7 @@ pub enum Opcode {
     MoveRegMemByte,
     MoveRegMemShort,
     MoveRegMemLong,
-
+    
     MoveMemRegByte,
     MoveMemRegShort,
     MoveMemRegLong,
@@ -138,7 +138,8 @@ pub enum Opcode {
     CompareReg,
     
     // TODO: implement idt & io ports.
-    // Interrupt,
+    Interrupt,
+    InterruptReturn,
     // OutByte,
     // InByte,
     Call,

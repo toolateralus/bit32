@@ -78,8 +78,8 @@ impl Debugger {
             }
             let elapsed_time = start_time.elapsed();
             let elapsed_seconds = elapsed_time.as_secs_f64();
-            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0; // Changed to MHz
-            self.display_registers(&cpu, mhz); // Now displaying MHz
+            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0; 
+            self.display_registers(&cpu, mhz);
        
         }
 
@@ -102,7 +102,7 @@ impl Debugger {
                     return;
                 }
                 DebugState::Reset => {
-                    cpu.registers = [0; 21];
+                    cpu.registers = [0; 22];
                     cpu.memory = Memory::new();
                     cpu.load_program_from_file(self.file.as_str()).unwrap();
                     *state = DebugState::Pause;
@@ -120,7 +120,7 @@ impl Debugger {
         }
     }
 
-    pub fn display_registers(&self, cpu: &Cpu, ghz : f64) {
+    pub fn display_registers(&self, cpu: &Cpu, clock_speed_mhz : f64) {
         let mut stdout = stdout();
         for (i, register) in cpu.registers.iter().enumerate() {
             execute!(stdout, cursor::MoveTo(0, i as u16)).unwrap();
@@ -137,7 +137,7 @@ impl Debugger {
         queue!(
             stdout, 
             Print(
-                format!("CPU Speed: {:.2} MHz", ghz)
+                format!("CPU Speed: {:.2} MHz", clock_speed_mhz)
             )
         ).unwrap();
         
