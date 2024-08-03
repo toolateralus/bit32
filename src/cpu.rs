@@ -1225,8 +1225,8 @@ impl Cpu {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
         
+        if false { log_opcode(&opcode); }
         
-        log_opcode(&opcode);
         match opcode {
             Opcode::Interrupt => {
                 if self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32  != Cpu::INTERRUPT_FLAG as u32 {

@@ -6,12 +6,13 @@ use tokio::time::{self, Duration};
 use cpu::Cpu;
 use crossterm::event::{self, Event, KeyCode};
 use crossterm::{
-    queue,
     style::{Color, Print, SetBackgroundColor, SetForegroundColor},
     terminal::{self, Clear},
 };
 use debug::Debugger;
 use std::io::{stdout, Write};
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::{cursor, execute};
 
 pub mod cpu;
 pub mod debug;
@@ -43,10 +44,10 @@ impl Hardware {
             _ => Color::Black,
         }
     }
-
+    
     pub async fn draw_vga_buffer(cpu: Arc<TokioMutex<Cpu>>) {
         let cpu = cpu.lock().await;
-        queue!(stdout(), Clear(terminal::ClearType::All)).unwrap();
+        execute!(stdout(), Clear(terminal::ClearType::All)).unwrap();
         let slice = &cpu.memory.buffer
             [Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN];
         for chunk in slice.chunks(2) {
@@ -55,7 +56,7 @@ impl Hardware {
                 let color = chunk[1];
                 let fg_color = Self::vga_color_to_crossterm_color(color & 0x0F);
                 let bg_color = Self::vga_color_to_crossterm_color((color >> 4) & 0x0F);
-                queue!(
+                execute!(
                     stdout(),
                     SetForegroundColor(fg_color),
                     SetBackgroundColor(bg_color),
@@ -87,7 +88,7 @@ impl Hardware {
 #[tokio::main]
 async fn main() {
     let file = "../asm32/test.o";
-
+    
     if env::args().len() > 1 && env::args().nth(1).unwrap() == "g" {
         let mut debugger = Debugger {
             file: String::new(),
@@ -102,15 +103,19 @@ async fn main() {
         }
 
         let cpu_clone = Arc::clone(&cpu);
+        execute!(stdout(), EnterAlternateScreen).unwrap();
+        execute!(stdout(), cursor::Hide).unwrap();
         tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_millis(16));
             loop {
-                interval.tick().await;
-                Hardware::draw_vga_buffer(cpu_clone.clone()).await;
-                Hardware::handle_input(cpu_clone.clone()).await;
+            interval.tick().await;
+            Hardware::draw_vga_buffer(cpu_clone.clone()).await;
+            Hardware::handle_input(cpu_clone.clone()).await;
             }
-        });
+        }).await.unwrap();
 
+        execute!(stdout(), LeaveAlternateScreen).unwrap();
+        
         cpu.lock().await.run();
     }
 }
