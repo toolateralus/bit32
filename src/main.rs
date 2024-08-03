@@ -48,8 +48,9 @@ impl Hardware {
     pub async fn draw_vga_buffer(cpu: Arc<TokioMutex<Cpu>>) {
         let cpu = cpu.lock().await;
         execute!(stdout(), Clear(terminal::ClearType::All)).unwrap();
-        let slice = &cpu.memory.buffer
-            [Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN];
+        let slice = &cpu.memory.buffer[Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN];
+        let mut x = 0;
+        let mut y = 0;
         for chunk in slice.chunks(2) {
             if chunk.len() == 2 {
                 let ch = chunk[0] as char;
@@ -58,18 +59,24 @@ impl Hardware {
                 let bg_color = Self::vga_color_to_crossterm_color((color >> 4) & 0x0F);
                 execute!(
                     stdout(),
+                    cursor::MoveTo(x, y),
                     SetForegroundColor(fg_color),
                     SetBackgroundColor(bg_color),
                     Print(ch)
                 )
                 .unwrap();
+                x += 1;
+                if x >= 80 { // Assuming 80 columns per row
+                    x = 0;
+                    y += 1;
+                }
             }
         }
         stdout().flush().unwrap();
     }
 
     pub async fn handle_input(cpu: Arc<TokioMutex<Cpu>>) {
-        if event::poll(Duration::from_millis(10)).unwrap() {
+        if event::poll(Duration::from_millis(0)).unwrap() {
             if let Event::Key(key_event) = event::read().unwrap() {
                 match key_event.code {
                     KeyCode::Char(c) => {
@@ -108,9 +115,9 @@ async fn main() {
         tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_millis(16));
             loop {
-            interval.tick().await;
-            Hardware::draw_vga_buffer(cpu_clone.clone()).await;
-            Hardware::handle_input(cpu_clone.clone()).await;
+                interval.tick().await;
+                Hardware::draw_vga_buffer(cpu_clone.clone()).await;
+                Hardware::handle_input(cpu_clone.clone()).await;
             }
         }).await.unwrap();
 
