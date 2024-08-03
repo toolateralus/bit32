@@ -3,7 +3,7 @@ use crossterm::{
     event::{self, KeyModifiers},
     execute, queue,
     style::{self, Print},
-    terminal::{self, Clear},
+    terminal::{self},
 };
 use std::{
     io::{stdout, Stdout, Write},
