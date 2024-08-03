@@ -635,7 +635,8 @@ mod tests {
             cpu.run();
             assert_eq!(cpu.registers[0], 255);
         }
-
+        
+        
         #[test]
         fn test_jump_reg() {
             let mut cpu = Cpu::new();
