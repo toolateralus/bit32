@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    mod stack_tests {
+    mod stack {
         use crate::{
             cpu::{Cpu, SP},
             opcodes::Opcode,
@@ -14,7 +14,7 @@ mod tests {
         }
         
         #[test]
-        fn test_push_byte_reg() {
+        fn push_byte_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 1;
 
@@ -25,7 +25,7 @@ mod tests {
             assert_eq!(cpu.memory.byte(expected_sp), 100);
         }
         #[test]
-        fn test_push_byte_imm() {
+        fn push_byte_imm() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 1;
 
@@ -35,7 +35,7 @@ mod tests {
             assert_eq!(cpu.memory.byte(expected_sp), 100);
         }
         #[test]
-        fn test_push_byte_mem() {
+        fn push_byte_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 1;
             cpu.memory.set_byte(100, 0xFF);
@@ -47,7 +47,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_short_reg() {
+        fn push_short_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 2;
             cpu.registers[0] = 100;
@@ -58,7 +58,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_short_imm() {
+        fn push_short_imm() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 2;
             cpu.load_program(&[Opcode::PushShortImm as u8, 100, 0]);
@@ -68,7 +68,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_short_mem() {
+        fn push_short_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 2;
             cpu.memory.set_short(100, 0xFF);
@@ -80,7 +80,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_long_reg() {
+        fn push_long_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 4;
             cpu.registers[0] = 100;
@@ -91,7 +91,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_long_imm() {
+        fn push_long_imm() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 4;
             cpu.load_program(&[Opcode::PushLongImm as u8, 100, 0, 0, 0]);
@@ -101,7 +101,7 @@ mod tests {
         }
 
         #[test]
-        fn test_push_long_mem() {
+        fn push_long_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() - 4;
 
@@ -114,7 +114,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_byte_reg() {
+        fn pop_byte_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 1;
             cpu.memory.set_byte(cpu.sp(), 100);
@@ -127,7 +127,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_byte_mem() {
+        fn pop_byte_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 1;
             cpu.memory.set_byte(cpu.sp(), 100);
@@ -141,7 +141,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_short_reg() {
+        fn pop_short_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 2;
             cpu.memory.set_short(cpu.sp(), 100);
@@ -154,7 +154,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_short_mem() {
+        fn pop_short_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 2;
             cpu.memory.set_short(cpu.sp(), 100);
@@ -168,7 +168,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_long_reg() {
+        fn pop_long_reg() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 4;
             cpu.memory.set_long(cpu.sp(), 100);
@@ -181,7 +181,7 @@ mod tests {
         }
 
         #[test]
-        fn test_pop_long_mem() {
+        fn pop_long_mem() {
             let mut cpu = create_cpu();
             let expected_sp = cpu.sp() + 4;
             cpu.memory.set_long(cpu.sp(), 100);
@@ -195,11 +195,11 @@ mod tests {
         }
     }
 
-    mod general_tests {
+    mod general {
         use crate::cpu::Cpu;
 
         #[test]
-        fn test_hlt() {
+        fn hlt() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[0]);
             cpu.run();
@@ -209,10 +209,10 @@ mod tests {
         }
     }
 
-    mod add_tests {
+    mod add {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_add_byte_reg() {
+        fn add_byte_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -224,7 +224,7 @@ mod tests {
         }
 
         #[test]
-        fn test_add_byte_mem() {
+        fn add_byte_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_byte(100, 50);
@@ -236,7 +236,7 @@ mod tests {
         }
 
         #[test]
-        fn test_add_short_reg() {
+        fn add_short_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -248,7 +248,7 @@ mod tests {
         }
 
         #[test]
-        fn test_add_short_mem() {
+        fn add_short_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_short(100, 50);
@@ -260,7 +260,7 @@ mod tests {
         }
 
         #[test]
-        fn test_add_long_reg() {
+        fn add_long_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -272,7 +272,7 @@ mod tests {
         }
 
         #[test]
-        fn test_add_long_mem() {
+        fn add_long_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_long(100, 50);
@@ -283,7 +283,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 150);
         }
         #[test]
-        fn test_add_byte_imm() {
+        fn add_byte_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::AddByteImm as u8, 100]);
@@ -292,7 +292,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 200);
         }
         #[test]
-        fn test_add_byte_imm_wrap() {
+        fn add_byte_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 156;
             cpu.load_program(&[Opcode::AddByteImm as u8, 100]);
@@ -301,7 +301,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 0);
         }
         #[test]
-        fn test_add_short_imm() {
+        fn add_short_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::AddShortImm as u8, 100, 0]);
@@ -310,7 +310,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 200);
         }
         #[test]
-        fn test_add_short_imm_wrap() {
+        fn add_short_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 65535;
             cpu.load_program(&[Opcode::AddShortImm as u8, 100, 0]);
@@ -319,7 +319,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 99);
         }
         #[test]
-        fn test_add_long_imm() {
+        fn add_long_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::AddLongImm as u8, 100, 0, 0, 0]);
@@ -328,7 +328,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 200);
         }
         #[test]
-        fn test_add_long_imm_wrap() {
+        fn add_long_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 4_294_967_295;
             cpu.load_program(&[Opcode::AddLongImm as u8, 100, 0, 0, 0]);
@@ -337,10 +337,10 @@ mod tests {
             assert_eq!(cpu.registers[0], 99);
         }
     }
-    mod sub_tests {
+    mod sub {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_sub_byte_imm() {
+        fn sub_byte_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::SubByteImm as u8, 100]);
@@ -349,7 +349,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 0);
         }
         #[test]
-        fn test_sub_byte_imm_wrap() {
+        fn sub_byte_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0;
             cpu.load_program(&[Opcode::SubByteImm as u8, 100]);
@@ -358,7 +358,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 156);
         }
         #[test]
-        fn test_sub_short_imm() {
+        fn sub_short_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::SubShortImm as u8, 100, 0]);
@@ -367,7 +367,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 0);
         }
         #[test]
-        fn test_sub_short_imm_wrap() {
+        fn sub_short_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0;
             cpu.load_program(&[Opcode::SubShortImm as u8, 100, 0]);
@@ -376,7 +376,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 65536 - 100);
         }
         #[test]
-        fn test_sub_long_imm() {
+        fn sub_long_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::SubLongImm as u8, 100, 0, 0, 0]);
@@ -385,7 +385,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 0);
         }
         #[test]
-        fn test_sub_long_imm_wrap() {
+        fn sub_long_imm_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0;
             cpu.load_program(&[Opcode::SubLongImm as u8, 100, 0, 0, 0]);
@@ -394,7 +394,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 4_294_967_295 - 99);
         }
         #[test]
-        fn test_sub_byte_reg() {
+        fn sub_byte_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -404,7 +404,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
         #[test]
-        fn test_sub_byte_mem() {
+        fn sub_byte_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_byte(100, 50);
@@ -414,7 +414,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
         #[test]
-        fn test_sub_short_reg() {
+        fn sub_short_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -424,7 +424,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
         #[test]
-        fn test_sub_short_mem() {
+        fn sub_short_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_short(100, 50);
@@ -434,7 +434,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
         #[test]
-        fn test_sub_long_reg() {
+        fn sub_long_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 50;
@@ -444,7 +444,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
         #[test]
-        fn test_sub_long_mem() {
+        fn sub_long_mem() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.memory.set_long(100, 50);
@@ -454,10 +454,10 @@ mod tests {
             assert_eq!(cpu.registers[0], 50);
         }
     }
-    mod mul_tests {
+    mod mul {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_mul_byte() {
+        fn mul_byte() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 2;
             cpu.load_program(&[Opcode::MulByteImm as u8, 10]);
@@ -466,7 +466,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 20);
         }
         #[test]
-        fn test_mul_byte_wrap() {
+        fn mul_byte_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::MulByteImm as u8, 100]);
@@ -476,7 +476,7 @@ mod tests {
             assert_eq!((cpu.registers[0] & 0xFF) as u8, result);
         }
         #[test]
-        fn test_mul_short() {
+        fn mul_short() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 2;
             cpu.load_program(&[Opcode::MulShortImm as u8, 10, 0]);
@@ -485,7 +485,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 20);
         }
         #[test]
-        fn test_mul_short_wrap() {
+        fn mul_short_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 70_000;
             cpu.load_program(&[Opcode::MulShortImm as u8, 100, 0]);
@@ -495,7 +495,7 @@ mod tests {
             assert_eq!((cpu.registers[0] & 0xFFFF) as u16, result);
         }
         #[test]
-        fn test_mul_long() {
+        fn mul_long() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 2;
             cpu.load_program(&[Opcode::MulLongImm as u8, 10, 0, 0, 0]);
@@ -504,7 +504,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 20);
         }
         #[test]
-        fn test_mul_long_wrap() {
+        fn mul_long_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 2_000_000_000;
             cpu.load_program(&[Opcode::MulLongImm as u8, 100, 0, 0, 0]);
@@ -514,10 +514,10 @@ mod tests {
             assert_eq!(cpu.registers[0], result);
         }
     }
-    mod div_tests {
+    mod div {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_div_byte() {
+        fn div_byte() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.load_program(&[Opcode::DivByteImm as u8, 2]);
@@ -527,7 +527,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 0);
         }
         #[test]
-        fn test_div_byte_wrap() {
+        fn div_byte_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 1000;
             cpu.load_program(&[Opcode::DivByteImm as u8, 2]);
@@ -538,7 +538,7 @@ mod tests {
             assert_eq!((cpu.registers[1] & 0xFF) as u8, 0);
         }
         #[test]
-        fn test_div_byte_remainder() {
+        fn div_byte_remainder() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 9;
             cpu.load_program(&[Opcode::DivByteImm as u8, 2]);
@@ -548,7 +548,7 @@ mod tests {
         }
 
         #[test]
-        fn test_div_short() {
+        fn div_short() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.load_program(&[Opcode::DivShortImm as u8, 2, 0]);
@@ -558,7 +558,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 0);
         }
         #[test]
-        fn test_div_short_wrap() {
+        fn div_short_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 70_000; // Value larger than u16::MAX
             cpu.load_program(&[Opcode::DivShortImm as u8, 2, 0]);
@@ -569,7 +569,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 0);
         }
         #[test]
-        fn test_div_short_remainder() {
+        fn div_short_remainder() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 9;
             cpu.load_program(&[Opcode::DivShortImm as u8, 2, 0]);
@@ -578,7 +578,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 1);
         }
         #[test]
-        fn test_div_long() {
+        fn div_long() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.load_program(&[Opcode::DivLongImm as u8, 2, 0, 0, 0]);
@@ -588,7 +588,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 0);
         }
         #[test]
-        fn test_div_long_wrap() {
+        fn div_long_wrap() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 2_000_000_000;
             cpu.load_program(&[Opcode::DivLongImm as u8, 2, 0, 0, 0]);
@@ -600,7 +600,7 @@ mod tests {
         }
 
         #[test]
-        fn test_div_long_remainder() {
+        fn div_long_remainder() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 9;
             cpu.load_program(&[Opcode::DivLongImm as u8, 2, 0, 0, 0]);
@@ -611,11 +611,11 @@ mod tests {
         }
     }
 
-    mod jump_tests {
+    mod jump {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
         #[test]
-        fn test_jump() {
+        fn jump() {
             let mut cpu = Cpu::new();
             let mut program = vec![];
             program.push(Opcode::JumpImm as u8);
@@ -627,7 +627,7 @@ mod tests {
         
         
         #[test]
-        fn test_jump_reg() {
+        fn jump_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             let mut program = vec![];
@@ -639,7 +639,7 @@ mod tests {
         }
 
         #[test]
-        fn test_jne() {
+        fn jne() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
@@ -652,7 +652,7 @@ mod tests {
         }
 
         #[test]
-        fn test_jne_negative() {
+        fn jne_negative() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
@@ -666,7 +666,7 @@ mod tests {
         }
 
         #[test]
-        fn test_je() {
+        fn je() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
@@ -679,7 +679,7 @@ mod tests {
         }
 
         #[test]
-        fn test_je_negative() {
+        fn je_negative() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
@@ -693,7 +693,7 @@ mod tests {
         }
     
         #[test]
-        fn test_jl_when_less() {
+        fn jl_when_less() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
@@ -705,7 +705,7 @@ mod tests {
             assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
         #[test]
-        fn test_jl_when_eq() {
+        fn jl_when_eq() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
@@ -718,7 +718,7 @@ mod tests {
             assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
         #[test]
-        fn test_jl_when_gr() {
+        fn jl_when_gr() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 9;
@@ -732,7 +732,7 @@ mod tests {
         }
         
         #[test]
-        fn test_jg_when_less() {
+        fn jg_when_less() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 11;
@@ -745,7 +745,7 @@ mod tests {
             assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
         #[test]
-        fn test_jg_when_eq() {
+        fn jg_when_eq() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 10;
@@ -758,7 +758,7 @@ mod tests {
             assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
         #[test]
-        fn test_jg_when_gr() {
+        fn jg_when_gr() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.registers[1] = 9;
@@ -773,10 +773,10 @@ mod tests {
     
     }
     
-    mod compare_tests {
+    mod compare {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_compare_reg() {
+        fn compare_reg() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.registers[1] = 100;
@@ -786,7 +786,7 @@ mod tests {
         }
 
         #[test]
-        fn test_compare_byte_imm() {
+        fn compare_byte_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 100;
             cpu.load_program(&[Opcode::CompareByteImm as u8, 100]);
@@ -794,7 +794,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 1);
         }
         #[test]
-        fn test_compare_short_imm() {
+        fn compare_short_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 511;
             cpu.load_program(&[Opcode::CompareShortImm as u8, 255, 1]);
@@ -802,7 +802,7 @@ mod tests {
             assert_eq!(cpu.registers[0], 1);
         }
         #[test]
-        fn test_compare_long_imm() {
+        fn compare_long_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xFF_FF_FF_FF;
             cpu.load_program(&[Opcode::CompareLongImm as u8, 0xFF, 0xFF, 0xFF, 0xFF]);
@@ -811,11 +811,11 @@ mod tests {
         }
     }
 
-    mod and_tests {
+    mod and {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
         #[test]
-        fn test_and_byte_imm() {
+        fn and_byte_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xFF;
             cpu.load_program(&[Opcode::AndByteImm as u8, 0xCC]);
@@ -824,7 +824,7 @@ mod tests {
         }
 
         #[test]
-        fn test_and_long_imm() {
+        fn and_long_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xFFFFFFFF;
             cpu.load_program(&[Opcode::AndLongImm as u8, 0xCC, 0xCC, 0xCC, 0xCC]);
@@ -833,7 +833,7 @@ mod tests {
         }
 
         #[test]
-        fn test_and_short_imm() {
+        fn and_short_imm() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xFFFF;
             cpu.load_program(&[Opcode::AndShortImm as u8, 0xCC, 0xCC]);
@@ -842,11 +842,11 @@ mod tests {
         }
     }
 
-    mod control_flow_tests {
+    mod control_flow {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
         #[test]
-        fn test_call() {
+        fn call() {
             let mut cpu = Cpu::new();
             cpu.memory.set_byte(100, Opcode::Hlt as u8);
             cpu.load_program(&[Opcode::Call as u8, 100]);
@@ -854,7 +854,7 @@ mod tests {
             assert_eq!(cpu.ip(), 101);
         }
         #[test]
-        fn test_return() {
+        fn _return() {
             let mut cpu = Cpu::new();
             // 1 cycle in routine
             cpu.memory.set_byte(100, Opcode::Return as u8);
@@ -869,11 +869,11 @@ mod tests {
         }
     }
     
-    mod int_tests {
+    mod int {
         use crate::{cpu::{Cpu, FLAGS, IDT}, opcodes::Opcode};
 
         #[test]
-        fn test_interrupt() {
+        fn interrupt() {
             let mut cpu = Cpu::new();
             
             // address of idt ptr.
@@ -899,24 +899,24 @@ mod tests {
         
     }
     
-    mod mov_tests {
+    mod mov {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
-        fn test_mov_reg_imm_byte() {
+        fn mov_reg_imm_byte() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmRegByte as u8, 0, 100]);
             cpu.run();
             assert_eq!(cpu.registers[0], 100);
         }
         #[test]
-        fn test_mov_reg_imm_short() {
+        fn mov_reg_imm_short() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmRegShort as u8, 0, 0xFF, 0xFF]);
             cpu.run();
             assert_eq!(cpu.registers[0], 0xFFFF);
         }
         #[test]
-        fn test_mov_reg_imm_long() {
+        fn mov_reg_imm_long() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmRegLong as u8, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
             cpu.run();
@@ -924,7 +924,7 @@ mod tests {
         }
 
         #[test]
-        fn test_mov_reg_reg_byte() {
+        fn mov_reg_reg_byte() {
             let mut cpu = Cpu::new();
             cpu.registers[1] = 10;
             cpu.load_program(&[Opcode::MoveRegRegByte as u8, 0, 1]);
@@ -933,7 +933,7 @@ mod tests {
             assert_eq!(cpu.ip(), 4);
         }
         #[test]
-        fn test_mov_reg_mem_byte() {
+        fn mov_reg_mem_byte() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 10;
             cpu.load_program(&[Opcode::MoveRegMemByte as u8, 100, 0]);
@@ -942,7 +942,7 @@ mod tests {
             assert_eq!(cpu.ip(), 7)
         }
         #[test]
-        fn test_mov_mem_mem_byte() {
+        fn mov_mem_mem_byte() {
             let mut cpu = Cpu::new();
             cpu.memory.buffer[10] = 100;
 
@@ -953,7 +953,7 @@ mod tests {
             assert_eq!(100, cpu.memory.buffer[511]);
         }
         #[test]
-        fn test_move_mem_reg_byte() {
+        fn move_mem_reg_byte() {
             let mut cpu = Cpu::new();
 
             cpu.memory.buffer[511] = 250;
@@ -964,7 +964,7 @@ mod tests {
         }
 
         #[test]
-        fn test_mov_mem_reg_short() {
+        fn mov_mem_reg_short() {
             let mut cpu = Cpu::new();
 
             cpu.memory.set_short(511, 0xBEEF);
@@ -974,7 +974,7 @@ mod tests {
             assert_eq!(cpu.registers[10], 0xBEEF);
         }
         #[test]
-        fn test_mov_reg_reg_short() {
+        fn mov_reg_reg_short() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 65535;
             cpu.load_program(&[Opcode::MoveRegRegShort as u8, 1, 0]);
@@ -988,7 +988,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 2);
         }
         #[test]
-        fn test_mov_mem_mem_short() {
+        fn mov_mem_mem_short() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(511, 0xDEADBEEF);
             cpu.load_program(&[Opcode::MoveMemMemShort as u8, 255, 2, 0, 0, 255, 1, 0, 0]);
@@ -999,7 +999,7 @@ mod tests {
         #[test]
 
         // Longs
-        fn test_move_mem_reg_long() {
+        fn move_mem_reg_long() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(511, 0xDEADBEEF);
             cpu.load_program(&[Opcode::MoveMemRegLong as u8, 10, 255, 1, 0, 0]);
@@ -1008,7 +1008,7 @@ mod tests {
             assert_eq!(cpu.registers[10], 0xDEADBEEF);
         }
         #[test]
-        fn test_mov_reg_reg_long() {
+        fn mov_reg_reg_long() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xDEADBEEF;
             cpu.load_program(&[Opcode::MoveRegRegLong as u8, 1, 0]);
@@ -1016,7 +1016,7 @@ mod tests {
             assert_eq!(cpu.registers[1], 0xDEADBEEF);
         }
         #[test]
-        fn test_mov_reg_mem_long() {
+        fn mov_reg_mem_long() {
             let mut cpu = Cpu::new();
             cpu.registers[0] = 0xDEADBEEF;
             cpu.load_program(&[Opcode::MoveRegMemLong as u8, 255, 1, 0, 0, 0]);
@@ -1025,7 +1025,7 @@ mod tests {
             assert_eq!(cpu.memory.long(511), 0xDEADBEEF);
         }
         #[test]
-        fn test_mov_mem_mem_long() {
+        fn mov_mem_mem_long() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(511, 0xDEADBEEF);
             cpu.load_program(&[Opcode::MoveMemMemLong as u8, 255, 2, 0, 0, 255, 1, 0, 0]);
@@ -1035,7 +1035,7 @@ mod tests {
         }
 
         #[test]
-        fn test_mov_mem_indirect_byte() {
+        fn mov_mem_indirect_byte() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 90);
@@ -1046,7 +1046,7 @@ mod tests {
             assert_eq!(90, cpu.memory.buffer[511]);
         }
         #[test]
-        fn test_mov_reg_indirect_byte() {
+        fn mov_reg_indirect_byte() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 90);
@@ -1059,21 +1059,21 @@ mod tests {
         
         
         #[test]
-        fn test_mov_imm_mem_byte() {
+        fn mov_imm_mem_byte() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmMemByte as u8, 100, 0, 0, 0, 250]);
             cpu.run();
             assert_eq!(cpu.memory.byte(100), 250);
         }
         #[test]
-        fn test_mov_imm_mem_short() {
+        fn mov_imm_mem_short() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmMemShort as u8, 100, 0, 0, 0, 0xFF, 0xFF]);
             cpu.run();
             assert_eq!(cpu.memory.short(100), 0xFFFF);
         }
         #[test]
-        fn test_mov_imm_mem_long() {
+        fn mov_imm_mem_long() {
             let mut cpu = Cpu::new();
             cpu.load_program(&[Opcode::MoveImmMemLong as u8, 100, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
             cpu.run();
@@ -1081,7 +1081,7 @@ mod tests {
         }
         
         #[test]
-        fn test_mov_mem_indirect_short() {
+        fn mov_mem_indirect_short() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 0xFFFF);
@@ -1093,7 +1093,7 @@ mod tests {
         }
         
         #[test]
-        fn test_mov_reg_indirect_short() {
+        fn mov_reg_indirect_short() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 0xFFFF);
@@ -1105,7 +1105,7 @@ mod tests {
         }
 
         #[test]
-        fn test_mov_mem_indirect_long() {
+        fn mov_mem_indirect_long() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 0xFFFFFFFF);
@@ -1117,7 +1117,7 @@ mod tests {
         }
 
         #[test]
-        fn test_mov_reg_indirect_long() {
+        fn mov_reg_indirect_long() {
             let mut cpu = Cpu::new();
             cpu.memory.set_long(250, 100);
             cpu.memory.set_long(100, 0xFFFFFFFF);
