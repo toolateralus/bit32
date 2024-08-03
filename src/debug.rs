@@ -78,9 +78,8 @@ impl Debugger {
             }
             let elapsed_time = start_time.elapsed();
             let elapsed_seconds = elapsed_time.as_secs_f64();
-            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0; 
+            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0;
             self.display_registers(&cpu, mhz);
-       
         }
 
         execute!(stdout, cursor::Show).unwrap();
@@ -120,7 +119,7 @@ impl Debugger {
         }
     }
 
-    pub fn display_registers(&self, cpu: &Cpu, clock_speed_mhz : f64) {
+    pub fn display_registers(&self, cpu: &Cpu, clock_speed_mhz: f64) {
         let mut stdout = stdout();
         for (i, register) in cpu.registers.iter().enumerate() {
             execute!(stdout, cursor::MoveTo(0, i as u16)).unwrap();
@@ -131,16 +130,15 @@ impl Debugger {
                     Cpu::reg_index_to_str(&i),
                     register
                 ))
-            ).unwrap();
-            
+            )
+            .unwrap();
         }
         queue!(
-            stdout, 
-            Print(
-                format!("CPU Speed: {:.2} MHz", clock_speed_mhz)
-            )
-        ).unwrap();
-        
+            stdout,
+            Print(format!("CPU Speed: {:.2} MHz", clock_speed_mhz))
+        )
+        .unwrap();
+
         stdout.flush().unwrap();
     }
 }

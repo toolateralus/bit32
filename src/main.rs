@@ -5,13 +5,13 @@ use debug::Debugger;
 
 pub mod cpu;
 pub mod debug;
+pub mod functions;
 pub mod opcodes;
 pub mod test;
-pub mod functions;
 
 fn main() {
     let file = "../asm32/test.o";
-    
+
     if env::args().len() > 1 && env::args().nth(1).unwrap() == "g" {
         let mut debugger = Debugger {
             file: String::new(),
@@ -22,5 +22,4 @@ fn main() {
         cpu.load_program_from_file(file).unwrap();
         cpu.run();
     }
-    
 }

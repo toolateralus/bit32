@@ -1,3 +1,47 @@
+mod le_bytes_junk {
+    pub trait ToLeTrait {
+        #[allow(dead_code)]
+        fn to_le_bytes(self) -> Vec<u8>;
+    }
+    impl ToLeTrait for u8 {
+        fn to_le_bytes(self) -> Vec<u8> {
+            self.to_le_bytes().to_vec()
+        }
+    }
+
+    impl ToLeTrait for u16 {
+        fn to_le_bytes(self) -> Vec<u8> {
+            self.to_le_bytes().to_vec()
+        }
+    }
+    impl ToLeTrait for u32 {
+        fn to_le_bytes(self) -> Vec<u8> {
+            self.to_le_bytes().to_vec()
+        }
+    }
+    pub trait OurFrom<T> {
+        #[allow(dead_code)]
+        fn our_from(value: T) -> Self;
+    }
+    impl OurFrom<u32> for u16 {
+        fn our_from(value: u32) -> Self {
+            value as u16
+        }
+    }
+    impl OurFrom<u32> for u32 {
+        fn our_from(value: u32) -> Self {
+            value as u32
+        }
+    }
+    impl OurFrom<u32> for u8 {
+        fn our_from(value: u32) -> Self {
+            value as u8
+        }
+    }
+
+
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -624,8 +668,7 @@ mod tests {
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
-        
-        
+
         #[test]
         fn test_jump_reg() {
             let mut cpu = Cpu::new();
@@ -691,7 +734,7 @@ mod tests {
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
-    
+
         #[test]
         fn test_jl_when_less() {
             let mut cpu = Cpu::new();
@@ -730,7 +773,7 @@ mod tests {
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], no_jmp_addr);
         }
-        
+
         #[test]
         fn test_jg_when_less() {
             let mut cpu = Cpu::new();
@@ -769,10 +812,8 @@ mod tests {
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], 10);
         }
-        
-    
     }
-    
+
     mod compare_tests {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
@@ -868,265 +909,81 @@ mod tests {
             assert_eq!(cpu.ip(), 6)
         }
     }
-    
+
     mod int_tests {
-        use crate::{cpu::{Cpu, FLAGS, IDT}, opcodes::Opcode};
+        use crate::{
+            cpu::{Cpu, FLAGS, IDT},
+            opcodes::Opcode,
+        };
 
         #[test]
         fn test_interrupt() {
             let mut cpu = Cpu::new();
-            
+
             // address of idt ptr.
             cpu.registers[IDT] = 3;
-            
+
             cpu.load_program(&[
-                Opcode::Interrupt as u8, 0, // ip : 2
+                Opcode::Interrupt as u8,
+                0, // ip : 2
                 Opcode::Hlt as u8,
                 // idt
                 // isr 0 just loads eax and ebx with 10, 15
-                Opcode::MoveImmRegByte as u8, 0, 10,
-                Opcode::MoveImmRegByte as u8, 1, 15,
+                Opcode::MoveImmRegByte as u8,
+                0,
+                10,
+                Opcode::MoveImmRegByte as u8,
+                1,
+                15,
                 Opcode::InterruptReturn as u8,
             ]);
-            
+
             cpu.run();
             assert_eq!(cpu.ip(), 3);
             assert_eq!(cpu.registers[0], 10);
             assert_eq!(cpu.registers[1], 15);
             assert_eq!((cpu.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32), 0);
         }
-        
-        
     }
-    
-    mod mov_tests {
-        use crate::{cpu::Cpu, opcodes::Opcode};
-        #[test]
-        fn test_mov_reg_imm_byte() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmRegByte as u8, 0, 100]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 100);
-        }
-        #[test]
-        fn test_mov_reg_imm_short() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmRegShort as u8, 0, 0xFF, 0xFF]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xFFFF);
-        }
-        #[test]
-        fn test_mov_reg_imm_long() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmRegLong as u8, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], 0xFFFFFFFF);
-        }
 
-        #[test]
-        fn test_mov_reg_reg_byte() {
-            let mut cpu = Cpu::new();
-            cpu.registers[1] = 10;
-            cpu.load_program(&[Opcode::MoveRegRegByte as u8, 0, 1]);
-            cpu.run();
-            assert_eq!(cpu.registers[0], cpu.registers[1]);
-            assert_eq!(cpu.ip(), 4);
+    mod mov {
+        mod to_reg {
+            mod from_imm {
+                use crate::test::le_bytes_junk::{OurFrom, ToLeTrait};
+                fn test_move_imm_reg<T>(op: crate::opcodes::Opcode)
+                where
+                    T: Copy + std::fmt::Debug + OurFrom<u32> + Into<u64> + ToLeTrait + Eq
+                {
+                    let mut cpu = crate::cpu::Cpu::new();
+                    let mut program = vec![];
+                    let val: T = T::our_from(0x10101010);
+                    program.push(op as u8);
+                    program.push(0);
+                    program.extend_from_slice(&val.to_le_bytes());
+                    cpu.load_program(program.as_slice());
+                    cpu.cycle();
+                    assert_eq!(T::our_from(cpu.registers[0]), val);
+                }
+                #[test]
+                fn byte() {
+                    test_move_imm_reg::<u8>(crate::opcodes::Opcode::MoveImmRegByte);
+                }
+                #[test]
+                fn short() {
+                    test_move_imm_reg::<u16>(crate::opcodes::Opcode::MoveImmRegShort);
+                }
+                #[test]
+                fn long() {
+                    test_move_imm_reg::<u32>(crate::opcodes::Opcode::MoveImmRegLong);
+                }
+            }
+            mod from_reg {}
+            mod from_abs {}
+            mod from_mem {}
+            mod from_ind {}
         }
-        #[test]
-        fn test_mov_reg_mem_byte() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 10;
-            cpu.load_program(&[Opcode::MoveRegMemByte as u8, 100, 0]);
-            cpu.run();
-            assert_eq!(cpu.memory.buffer[100], 10);
-            assert_eq!(cpu.ip(), 7)
-        }
-        #[test]
-        fn test_mov_mem_mem_byte() {
-            let mut cpu = Cpu::new();
-            cpu.memory.buffer[10] = 100;
-
-            cpu.load_program(&[Opcode::MoveMemMemByte as u8, 255, 1, 0, 0, 10]);
-
-            cpu.run();
-
-            assert_eq!(100, cpu.memory.buffer[511]);
-        }
-        #[test]
-        fn test_move_mem_reg_byte() {
-            let mut cpu = Cpu::new();
-
-            cpu.memory.buffer[511] = 250;
-            cpu.load_program(&[Opcode::MoveMemRegByte as u8, 10, 255, 1, 0, 0]);
-            cpu.run();
-
-            assert_eq!(cpu.registers[10], 250);
-        }
-
-        #[test]
-        fn test_mov_mem_reg_short() {
-            let mut cpu = Cpu::new();
-
-            cpu.memory.set_short(511, 0xBEEF);
-            cpu.load_program(&[Opcode::MoveMemRegShort as u8, 10, 255, 1, 0, 0]);
-            cpu.run();
-
-            assert_eq!(cpu.registers[10], 0xBEEF);
-        }
-        #[test]
-        fn test_mov_reg_reg_short() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 65535;
-            cpu.load_program(&[Opcode::MoveRegRegShort as u8, 1, 0]);
-            cpu.run();
-            assert_eq!(cpu.registers[1], 65535);
-
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 65538;
-            cpu.load_program(&[Opcode::MoveRegRegShort as u8, 1, 0]);
-            cpu.run();
-            assert_eq!(cpu.registers[1], 2);
-        }
-        #[test]
-        fn test_mov_mem_mem_short() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(511, 0xDEADBEEF);
-            cpu.load_program(&[Opcode::MoveMemMemShort as u8, 255, 2, 0, 0, 255, 1, 0, 0]);
-            cpu.run();
-
-            assert_eq!(cpu.memory.long(767), 0xBEEF);
-        }
-        #[test]
-
-        // Longs
-        fn test_move_mem_reg_long() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(511, 0xDEADBEEF);
-            cpu.load_program(&[Opcode::MoveMemRegLong as u8, 10, 255, 1, 0, 0]);
-            cpu.run();
-
-            assert_eq!(cpu.registers[10], 0xDEADBEEF);
-        }
-        #[test]
-        fn test_mov_reg_reg_long() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xDEADBEEF;
-            cpu.load_program(&[Opcode::MoveRegRegLong as u8, 1, 0]);
-            cpu.run();
-            assert_eq!(cpu.registers[1], 0xDEADBEEF);
-        }
-        #[test]
-        fn test_mov_reg_mem_long() {
-            let mut cpu = Cpu::new();
-            cpu.registers[0] = 0xDEADBEEF;
-            cpu.load_program(&[Opcode::MoveRegMemLong as u8, 255, 1, 0, 0, 0]);
-            cpu.run();
-            assert_eq!(cpu.ip(), 7);
-            assert_eq!(cpu.memory.long(511), 0xDEADBEEF);
-        }
-        #[test]
-        fn test_mov_mem_mem_long() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(511, 0xDEADBEEF);
-            cpu.load_program(&[Opcode::MoveMemMemLong as u8, 255, 2, 0, 0, 255, 1, 0, 0]);
-            cpu.run();
-
-            assert_eq!(cpu.memory.long(767), 0xDEADBEEF);
-        }
-
-        #[test]
-        fn test_mov_mem_indirect_byte() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 90);
-            
-            cpu.load_program(&[Opcode::MoveMemIndirectByte as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(90, cpu.memory.buffer[511]);
-        }
-        #[test]
-        fn test_mov_reg_indirect_byte() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 90);
-            
-            cpu.load_program(&[Opcode::MoveRegIndirectByte as u8, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(cpu.registers[0], 90);
-        }
-        
-        
-        #[test]
-        fn test_mov_imm_mem_byte() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmMemByte as u8, 100, 0, 0, 0, 250]);
-            cpu.run();
-            assert_eq!(cpu.memory.byte(100), 250);
-        }
-        #[test]
-        fn test_mov_imm_mem_short() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmMemShort as u8, 100, 0, 0, 0, 0xFF, 0xFF]);
-            cpu.run();
-            assert_eq!(cpu.memory.short(100), 0xFFFF);
-        }
-        #[test]
-        fn test_mov_imm_mem_long() {
-            let mut cpu = Cpu::new();
-            cpu.load_program(&[Opcode::MoveImmMemLong as u8, 100, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
-            cpu.run();
-            assert_eq!(cpu.memory.long(100), 0xFFFFFFFF);
-        }
-        
-        #[test]
-        fn test_mov_mem_indirect_short() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 0xFFFF);
-            
-            cpu.load_program(&[Opcode::MoveMemIndirectShort as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(0xFFFF, cpu.memory.short(511));
-        }
-        
-        #[test]
-        fn test_mov_reg_indirect_short() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 0xFFFF);
-            
-            cpu.load_program(&[Opcode::MoveRegIndirectShort as u8, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(cpu.registers[0], 0xFFFF);
-        }
-
-        #[test]
-        fn test_mov_mem_indirect_long() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 0xFFFFFFFF);
-            
-            cpu.load_program(&[Opcode::MoveMemIndirectLong as u8, 255, 1, 0, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(0xFFFFFFFF, cpu.memory.long(511));
-        }
-
-        #[test]
-        fn test_mov_reg_indirect_long() {
-            let mut cpu = Cpu::new();
-            cpu.memory.set_long(250, 100);
-            cpu.memory.set_long(100, 0xFFFFFFFF);
-            
-            cpu.load_program(&[Opcode::MoveRegIndirectLong as u8, 0, 250, 0, 0 , 0]);
-            cpu.run();
-            
-            assert_eq!(cpu.registers[0], 0xFFFFFFFF);
-        }
+        mod to_rel {}
+        mod to_abs {}
+        mod to_ind {}
     }
 }
-
