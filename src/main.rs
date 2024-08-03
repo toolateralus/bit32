@@ -66,16 +66,16 @@ impl Hardware {
         }
         stdout().flush().unwrap();
     }
-    
+
     pub async fn handle_input(cpu: Arc<TokioMutex<Cpu>>) {
         if event::poll(Duration::from_millis(10)).unwrap() {
             if let Event::Key(key_event) = event::read().unwrap() {
                 match key_event.code {
                     KeyCode::Char(c) => {
                         cpu.lock().await.hardware_interrupt_routine =
-                        Some(Box::new(move |cpu: &mut Cpu| {
-                            cpu.registers[0] = c.into();
-                        }));
+                            Some(Box::new(move |cpu: &mut Cpu| {
+                                cpu.registers[0] = c.into();
+                            }));
                     }
                     _ => {}
                 }
