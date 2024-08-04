@@ -1,99 +1,23 @@
-use std::env;
-use std::sync::Arc;
-use tokio::sync::Mutex as TokioMutex;
-use tokio::time::{self, Duration};
-
 use cpu::Cpu;
-use crossterm::event::{self, Event, KeyCode};
-use crossterm::{
-    style::{Color, Print, SetBackgroundColor, SetForegroundColor},
-    terminal::{self, Clear},
-};
-use debug::Debugger;
-use std::io::{stdout, Write};
+use hardware::Hardware;
+use std::env;
+use std::io::stdout;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, RwLock};
+use std::thread;
+use std::time::Duration;
+
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute};
+use debug::Debugger;
 
 pub mod cpu;
 pub mod debug;
 pub mod functions;
+pub mod hardware;
 pub mod opcodes;
 pub mod test;
-
-struct Hardware {}
-
-impl Hardware {
-    fn vga_color_to_crossterm_color(vga_color: u8) -> Color {
-        match vga_color {
-            0x0 => Color::Black,
-            0x1 => Color::Blue,
-            0x2 => Color::Green,
-            0x3 => Color::Cyan,
-            0x4 => Color::Red,
-            0x5 => Color::Magenta,
-            0x6 => Color::Yellow,
-            0x7 => Color::White,
-            0x8 => Color::DarkGrey,
-            0x9 => Color::DarkBlue,
-            0xA => Color::DarkGreen,
-            0xB => Color::DarkCyan,
-            0xC => Color::DarkRed,
-            0xD => Color::DarkMagenta,
-            0xE => Color::DarkYellow,
-            0xF => Color::Grey,
-            _ => Color::Black,
-        }
-    }
-    
-    pub async fn draw_vga_buffer(cpu: Arc<TokioMutex<Cpu>>) {
-        let cpu = cpu.lock().await;
-        execute!(stdout(), Clear(terminal::ClearType::All)).unwrap();
-        let slice = &cpu.memory.buffer[Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN];
-        let mut x = 0;
-        let mut y = 0;
-        for chunk in slice.chunks(2) {
-            if chunk.len() == 2 {
-                let ch = chunk[0] as char;
-                let color = chunk[1];
-                let fg_color = Self::vga_color_to_crossterm_color(color & 0x0F);
-                let bg_color = Self::vga_color_to_crossterm_color((color >> 4) & 0x0F);
-                execute!(
-                    stdout(),
-                    cursor::MoveTo(x, y),
-                    SetForegroundColor(fg_color),
-                    SetBackgroundColor(bg_color),
-                    Print(ch)
-                )
-                .unwrap();
-                x += 1;
-                if x >= 80 { // Assuming 80 columns per row
-                    x = 0;
-                    y += 1;
-                }
-            }
-        }
-        stdout().flush().unwrap();
-    }
-
-    pub async fn handle_input(cpu: Arc<TokioMutex<Cpu>>) {
-        if event::poll(Duration::from_millis(0)).unwrap() {
-            if let Event::Key(key_event) = event::read().unwrap() {
-                match key_event.code {
-                    KeyCode::Char(c) => {
-                        cpu.lock().await.hardware_interrupt_routine =
-                            Some(Box::new(move |cpu: &mut Cpu| {
-                                cpu.registers[0] = c.into();
-                            }));
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-}
-
-#[tokio::main]
-async fn main() {
+fn main() {
     let file = "../asm32/test.o";
     
     if env::args().len() > 1 && env::args().nth(1).unwrap() == "g" {
@@ -102,41 +26,43 @@ async fn main() {
         };
         debugger.run(file);
     } else {
-        let cpu = Arc::new(TokioMutex::new(Cpu::new()));
+        let cpu = Arc::new(RwLock::new(Cpu::new()));
+        let running = Arc::new(AtomicBool::new(true));
         
         {
-            let mut cpu = cpu.lock().await;
+            let mut cpu = cpu.write().unwrap();
             cpu.load_program_from_file(file).unwrap();
         }
         
         let cpu_clone = Arc::clone(&cpu);
+        let running_clone = Arc::clone(&running);
         execute!(stdout(), EnterAlternateScreen).unwrap();
         execute!(stdout(), cursor::Hide).unwrap();
-
-        let (tx, mut rx) = tokio::sync::watch::channel(false);
-
-        let thread = tokio::spawn(async move {
-            let mut interval = time::interval(Duration::from_millis(16));
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        Hardware::draw_vga_buffer(cpu_clone.clone()).await;
-                        Hardware::handle_input(cpu_clone.clone()).await;
-                    }
-                    _ = rx.changed() => {
-                        if *rx.borrow() {
-                            break;
-                        }
-                    }
-                }
+        
+        let draw_handle = thread::spawn(move || {
+            while running_clone.load(Ordering::SeqCst) {
+                thread::sleep(Duration::from_millis(16));
+                Hardware::draw_vga_buffer(cpu_clone.clone());
+                Hardware::handle_input(cpu_clone.clone());
             }
         });
-
-        cpu.lock().await.run();
-
-        // Signal the background thread to stop
-        tx.send(true).unwrap();
-        thread.await.unwrap();
+        
+        let cpu_self_clone = Arc::clone(&cpu);
+        let running_self_clone = Arc::clone(&running);
+        
+        let cpu_handle = thread::spawn(move || loop {
+            {
+                let cpu = cpu_self_clone.read().unwrap();
+                if (cpu.flags() & Cpu::HALT_FLAG) == Cpu::HALT_FLAG {
+                    running_self_clone.store(false, Ordering::SeqCst);
+                    break;
+                }
+            }
+            cpu_self_clone.write().unwrap().cycle();
+        });
+        
+        cpu_handle.join().unwrap();
+        draw_handle.join().unwrap();
 
         execute!(stdout(), LeaveAlternateScreen).unwrap();
     }
