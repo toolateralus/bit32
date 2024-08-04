@@ -79,7 +79,7 @@ impl Memory {
 pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
-    pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send>>,
+    pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
 }
 
 impl Debug for Cpu {
@@ -1225,7 +1225,7 @@ impl Cpu {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
         
-        if false { log_opcode(&opcode); }
+        if true { log_opcode(&opcode); }
         
         match opcode {
             Opcode::Interrupt => {
