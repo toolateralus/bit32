@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::io::Read;
 use std::str::Utf8Error;
 
-const NUM_REGISTERS: usize = 22;
+pub const NUM_REGISTERS: usize = 22;
 
 #[allow(dead_code)]
 pub const IDT: usize = 21;

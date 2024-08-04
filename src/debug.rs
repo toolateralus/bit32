@@ -6,12 +6,10 @@ use crossterm::{
     terminal::{self},
 };
 use std::{
-    io::{stdout, Stdout, Write},
-    thread,
-    time::Duration,
+    fmt::format, io::{stdout, Stdout, Write}, thread, time::Duration
 };
 
-use crate::cpu::{Cpu, Memory};
+use crate::{cpu::{Cpu, Memory, IP, NUM_REGISTERS}, opcodes::Opcode};
 use crossterm::event::{Event, KeyCode};
 
 pub enum DebugState {
@@ -57,70 +55,52 @@ impl Debugger {
         let mut stdout = stdout();
         let _raw = terminal::enable_raw_mode().unwrap();
         execute!(stdout, cursor::Hide).unwrap();
-        execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
-
+        
         let mut state: DebugState = DebugState::Pause;
         let start_time = std::time::Instant::now();
         let mut cycle_count = 0;
-
+        execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
+        
         while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
-            execute!(stdout, cursor::MoveTo(0, 25)).unwrap();
-            self.display_legend();
-            execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
-            cpu.cycle();
-            cycle_count += 1;
-            self.input(&mut state);
-            match state {
-                DebugState::Executing | DebugState::Step | DebugState::Continue => {}
-                DebugState::Pause => {
-                    self.pause(&mut cpu, &mut state, &mut stdout);
-                }
-
-                DebugState::Reset => {}
-                DebugState::Abort => break,
-            }
             let elapsed_time = start_time.elapsed();
             let elapsed_seconds = elapsed_time.as_secs_f64();
             let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0;
+
+            execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
             self.display_registers(&cpu, mhz);
+            execute!(stdout, cursor::MoveTo(0, 25)).unwrap();
+            self.display_legend();
+
+            self.input(&mut state);
+            match state {
+                DebugState::Step => {
+                    state = DebugState::Pause;
+                }
+                DebugState::Reset => {
+                    execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
+                    cpu.registers = [0; NUM_REGISTERS];
+                    cpu.memory = Memory::new();
+                    cpu.load_program_from_file(self.file.as_str()).unwrap();
+                    state = DebugState::Pause;
+                    continue;
+                }
+                DebugState::Abort => {
+                    break;
+                }
+                DebugState::Continue |
+                DebugState::Executing => {}
+                DebugState::Pause => {
+                    continue;
+                }
+            }
+
+            cpu.cycle();
+            cycle_count += 1;
         }
 
         execute!(stdout, cursor::Show).unwrap();
         terminal::disable_raw_mode().unwrap();
         println!("\n\x1b[;032]RESULT::\n\n\t{:?}", cpu);
-    }
-
-    pub fn pause(&self, cpu: &mut Cpu, state: &mut DebugState, stdout: &mut Stdout) {
-        loop {
-            self.input(state);
-            match state {
-                DebugState::Step => {
-                    cpu.cycle();
-                    self.display_registers(cpu, 0.0);
-                    *state = DebugState::Pause;
-                    continue;
-                }
-                DebugState::Continue => {
-                    return;
-                }
-                DebugState::Reset => {
-                    cpu.registers = [0; 22];
-                    cpu.memory = Memory::new();
-                    cpu.load_program_from_file(self.file.as_str()).unwrap();
-                    *state = DebugState::Pause;
-                    execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
-                    return;
-                }
-                DebugState::Abort => {
-                    return;
-                }
-                DebugState::Executing => {
-                    return;
-                }
-                DebugState::Pause => {}
-            }
-            thread::sleep(Duration::from_millis(16));
-        }
     }
 
     pub fn display_registers(&self, cpu: &Cpu, clock_speed_mhz: f64) {
@@ -130,18 +110,35 @@ impl Debugger {
             queue!(
                 stdout,
                 Print(format!(
-                    "\x1b[1;96m{}\x1b[1;97m: {}\r",
+                    "\x1b[1;96m{}\x1b[1;97m: {} (0x{:X}){}\r",
                     Cpu::reg_index_to_str(&i),
-                    register
+                    register,
+                    register,
+                    "           "
                 ))
             )
             .unwrap();
         }
+        let next_i = cpu.memory.buffer[cpu.registers[IP] as usize];
+        let next_i_str = if next_i < Opcode::Nop as u8 {
+            format!("{:?}", Opcode::from(next_i))
+        } else {
+            format!("Invalid Opcode: {}", next_i)
+        };
         queue!(
             stdout,
-            Print(format!("CPU Speed: {:.2} MHz", clock_speed_mhz))
-        )
-        .unwrap();
+            Print(format!(
+                "\x1b[1;96m{}\x1b[1;97m: {}{}\r",
+                "Next Instruction:",
+                next_i_str,
+                "           "
+            ))
+        ).unwrap();
+        // queue!(
+        //     stdout,
+        //     Print(format!("CPU Speed: {:.2} MHz", clock_speed_mhz))
+        // )
+        // .unwrap();
 
         stdout.flush().unwrap();
     }
