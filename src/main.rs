@@ -103,26 +103,41 @@ async fn main() {
         debugger.run(file);
     } else {
         let cpu = Arc::new(TokioMutex::new(Cpu::new()));
-
+        
         {
             let mut cpu = cpu.lock().await;
             cpu.load_program_from_file(file).unwrap();
         }
-
+        
         let cpu_clone = Arc::clone(&cpu);
         execute!(stdout(), EnterAlternateScreen).unwrap();
         execute!(stdout(), cursor::Hide).unwrap();
-        tokio::spawn(async move {
+
+        let (tx, mut rx) = tokio::sync::watch::channel(false);
+
+        let thread = tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_millis(16));
             loop {
-                interval.tick().await;
-                Hardware::draw_vga_buffer(cpu_clone.clone()).await;
-                Hardware::handle_input(cpu_clone.clone()).await;
+                tokio::select! {
+                    _ = interval.tick() => {
+                        Hardware::draw_vga_buffer(cpu_clone.clone()).await;
+                        Hardware::handle_input(cpu_clone.clone()).await;
+                    }
+                    _ = rx.changed() => {
+                        if *rx.borrow() {
+                            break;
+                        }
+                    }
+                }
             }
-        }).await.unwrap();
+        });
+
+        cpu.lock().await.run();
+
+        // Signal the background thread to stop
+        tx.send(true).unwrap();
+        thread.await.unwrap();
 
         execute!(stdout(), LeaveAlternateScreen).unwrap();
-        
-        cpu.lock().await.run();
     }
 }
