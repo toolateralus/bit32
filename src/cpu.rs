@@ -1225,7 +1225,7 @@ impl Cpu {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
         
-        if true { log_opcode(&opcode); }
+        if false { log_opcode(&opcode); }
         
         match opcode {
             Opcode::Interrupt => {

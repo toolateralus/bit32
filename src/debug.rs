@@ -6,7 +6,7 @@ use crossterm::{
     terminal::{self},
 };
 use std::{
-    fmt::format, io::{stdout, Stdout, Write}, thread, time::Duration
+    io::{stdout, Write}, time::Duration
 };
 
 use crate::{cpu::{Cpu, Memory, IP, NUM_REGISTERS}, opcodes::Opcode};
@@ -57,17 +57,12 @@ impl Debugger {
         execute!(stdout, cursor::Hide).unwrap();
         
         let mut state: DebugState = DebugState::Pause;
-        let start_time = std::time::Instant::now();
-        let mut cycle_count = 0;
         execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
         
         while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
-            let elapsed_time = start_time.elapsed();
-            let elapsed_seconds = elapsed_time.as_secs_f64();
-            let mhz = cycle_count as f64 / elapsed_seconds / 1_000_000.0;
 
             execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
-            self.display_registers(&cpu, mhz);
+            self.display_registers(&cpu);
             execute!(stdout, cursor::MoveTo(0, 25)).unwrap();
             self.display_legend();
 
@@ -95,7 +90,6 @@ impl Debugger {
             }
 
             cpu.cycle();
-            cycle_count += 1;
         }
 
         execute!(stdout, cursor::Show).unwrap();
@@ -103,7 +97,7 @@ impl Debugger {
         println!("\n\x1b[;032]RESULT::\n\n\t{:?}", cpu);
     }
 
-    pub fn display_registers(&self, cpu: &Cpu, clock_speed_mhz: f64) {
+    pub fn display_registers(&self, cpu: &Cpu) {
         let mut stdout = stdout();
         for (i, register) in cpu.registers.iter().enumerate() {
             execute!(stdout, cursor::MoveTo(0, i as u16)).unwrap();
@@ -134,11 +128,6 @@ impl Debugger {
                 "           "
             ))
         ).unwrap();
-        // queue!(
-        //     stdout,
-        //     Print(format!("CPU Speed: {:.2} MHz", clock_speed_mhz))
-        // )
-        // .unwrap();
 
         stdout.flush().unwrap();
     }
