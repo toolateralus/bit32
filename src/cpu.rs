@@ -397,22 +397,10 @@ impl Cpu {
                 self.registers[dest] = value as u32;
                 self.inc_sp(1);
             }
-            Opcode::PopByteMem => {
-                let addr = self.next_long() as usize;
-                let value = self.memory.byte(self.sp());
-                self.memory.set_byte(addr, value);
-                self.inc_sp(1);
-            }
             Opcode::PopShortReg => {
                 let dest = self.next_byte() as usize;
                 let value = self.memory.short(self.sp());
                 self.registers[dest] = value as u32;
-                self.inc_sp(2);
-            }
-            Opcode::PopShortMem => {
-                let addr = self.next_long() as usize;
-                let value = self.memory.short(self.sp());
-                self.memory.set_short(addr, value);
                 self.inc_sp(2);
             }
             Opcode::PopLongReg => {
@@ -421,10 +409,43 @@ impl Cpu {
                 self.registers[dest] = value as u32;
                 self.inc_sp(4);
             }
+            Opcode::PopByteMem => {
+                let addr = self.next_long() as usize;
+                let value = self.memory.byte(self.sp());
+                self.memory.set_byte(addr, value);
+                self.inc_sp(1);
+            }
+            Opcode::PopShortMem => {
+                let addr = self.next_long() as usize;
+                let value = self.memory.short(self.sp());
+                self.memory.set_short(addr, value);
+                self.inc_sp(2);
+            }
             Opcode::PopLongMem => {
                 let addr = self.next_long() as usize;
                 let value = self.memory.long(self.sp());
                 self.memory.set_long(addr, value);
+                self.inc_sp(4);
+            }
+            Opcode::PopByteIndirect => {
+                let dst_reg = self.next_byte() as usize;
+                let dst_adr = self.registers[dst_reg] as usize;
+                let value = self.memory.byte(self.sp());
+                self.memory.set_byte(dst_adr, value);
+                self.inc_sp(1);
+            }
+            Opcode::PopShortIndirect => {
+                let dst_reg = self.next_byte() as usize;
+                let dst_adr = self.registers[dst_reg] as usize;
+                let value = self.memory.short(self.sp());
+                self.memory.set_short(dst_adr, value);
+                self.inc_sp(2);
+            }
+            Opcode::PopLongIndirect => {
+                let dst_reg = self.next_byte() as usize;
+                let dst_adr = self.registers[dst_reg] as usize;
+                let value = self.memory.long(self.sp());
+                self.memory.set_long(dst_adr, value);
                 self.inc_sp(4);
             }
             _ => {
@@ -1433,7 +1454,10 @@ impl Cpu {
             | Opcode::PopByteMem
             | Opcode::PopByteReg
             | Opcode::PopShortReg
-            | Opcode::PopLongReg => {
+            | Opcode::PopLongReg
+            | Opcode::PopByteIndirect
+            | Opcode::PopShortIndirect
+            | Opcode::PopLongIndirect => {
                 self.pop(&opcode);
             }
 

@@ -73,8 +73,7 @@ impl Debugger {
                 }
                 DebugState::Reset => {
                     execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
-                    cpu.registers = [0; NUM_REGISTERS];
-                    cpu.memory = Memory::new();
+                    cpu = Cpu::new();
                     cpu.load_program_from_file(self.file.as_str()).unwrap();
                     state = DebugState::Pause;
                     continue;

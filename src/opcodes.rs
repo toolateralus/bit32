@@ -174,6 +174,10 @@ pub enum Opcode {
     PopShortMem,
     PopLongMem,
 
+    PopByteIndirect,
+    PopShortIndirect,
+    PopLongIndirect,
+
     // Jumps
     JumpEqual,
     JumpNotEqual,
@@ -311,6 +315,9 @@ impl Opcode {
             | Opcode::PopByteReg
             | Opcode::PopShortReg
             | Opcode::PopLongReg
+            | Opcode::PopByteIndirect
+            | Opcode::PopShortIndirect
+            | Opcode::PopLongIndirect
             | Opcode::JumpReg
             | Opcode::CompareReg
             // immediate bytes
@@ -376,7 +383,7 @@ impl Opcode {
             Opcode::InterruptReturn
             | Opcode::Return
             | Opcode::Nop
-            | Opcode::Hlt => (0,0)
+            | Opcode::Hlt => (0,0),
         }
     }
 }
