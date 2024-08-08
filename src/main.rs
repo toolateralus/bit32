@@ -2,10 +2,7 @@ use cpu::Cpu;
 use hardware::Hardware;
 use std::env;
 use std::io::stdout;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, RwLock};
-use std::thread;
-use std::time::Duration;
+use std::time::Instant;
 
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute};
@@ -26,44 +23,35 @@ fn main() {
         };
         debugger.run(file);
     } else {
-        let cpu = Arc::new(RwLock::new(Cpu::new()));
-        let running = Arc::new(AtomicBool::new(true));
+        let mut cpu = Cpu::new();
         
-        {
-            let mut cpu = cpu.write().unwrap();
-            cpu.load_program_from_file(file).unwrap();
-        }
+        cpu.load_program_from_file(file).unwrap();
         
-        let cpu_clone = Arc::clone(&cpu);
-        let running_clone = Arc::clone(&running);
         execute!(stdout(), EnterAlternateScreen).unwrap();
         execute!(stdout(), cursor::Hide).unwrap();
         
-        let draw_handle = thread::spawn(move || {
-            while running_clone.load(Ordering::SeqCst) {
-                thread::sleep(Duration::from_millis(16));
-                Hardware::draw_vga_buffer(cpu_clone.clone());
-                Hardware::handle_input(cpu_clone.clone());
+        let mut cycles = 0usize;
+        let start = Instant::now();
+        
+        const CYCLES_PER_FRAME: usize = 15_000_000 / 60;
+        
+        while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
+            cpu.cycle();
+            
+            if cycles >= CYCLES_PER_FRAME * 2 {
+                Hardware::draw_vga_buffer(&cpu);
+                //Hardware::handle_input(&mut cpu);
+                cycles = 0;
             }
-        });
+            
+            cycles += 1;
+        }
         
-        let cpu_self_clone = Arc::clone(&cpu);
-        let running_self_clone = Arc::clone(&running);
+        let elapsed = start.elapsed();
+        let seconds = elapsed.as_secs_f64();
+        let clock_speed_hz = cycles as f64 / seconds;
         
-        let cpu_handle = thread::spawn(move || loop {
-            {
-                let cpu = cpu_self_clone.read().unwrap();
-                if (cpu.flags() & Cpu::HALT_FLAG) == Cpu::HALT_FLAG {
-                    running_self_clone.store(false, Ordering::SeqCst);
-                    break;
-                }
-            }
-            cpu_self_clone.write().unwrap().cycle();
-        });
-        
-        cpu_handle.join().unwrap();
-        draw_handle.join().unwrap();
-
         execute!(stdout(), LeaveAlternateScreen).unwrap();
+        println!("Average CPU clock speed: {:.2} Hz", clock_speed_hz);
     }
 }

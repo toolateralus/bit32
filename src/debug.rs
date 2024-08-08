@@ -9,7 +9,7 @@ use std::{
     io::{stdout, Write}, time::Duration
 };
 
-use crate::{cpu::{Cpu, Memory, IP, NUM_REGISTERS}, opcodes::Opcode};
+use crate::{cpu::{Cpu, IP}, opcodes::Opcode};
 use crossterm::event::{Event, KeyCode};
 
 pub enum DebugState {

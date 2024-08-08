@@ -1,4 +1,4 @@
-use std::{io::{stdout, Write}, sync::{Arc, RwLock}, time::Duration};
+use std::{io::{stdout, Write}, time::Duration};
 
 use crossterm::{cursor, event::{self, Event, KeyCode}, execute, style::{Color, Print, SetBackgroundColor, SetForegroundColor}, terminal::{self, Clear}};
 
@@ -28,9 +28,8 @@ impl Hardware {
           _ => Color::Black,
       }
   }
-
-  pub fn draw_vga_buffer(cpu: Arc<RwLock<Cpu>>) {
-      let cpu = cpu.read().unwrap();
+  
+  pub fn draw_vga_buffer(cpu: &Cpu) {
       execute!(stdout(), Clear(terminal::ClearType::All)).unwrap();
       let slice = &cpu.memory.buffer[Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN];
       let mut x = 0;
@@ -59,12 +58,12 @@ impl Hardware {
       stdout().flush().unwrap();
   }
   
-  pub fn handle_input(cpu: Arc<RwLock<Cpu>>) {
+  pub fn handle_input(cpu: &mut Cpu) {
       if event::poll(Duration::from_millis(0)).unwrap() {
           if let Event::Key(key_event) = event::read().unwrap() {
               match key_event.code {
                   KeyCode::Char(c) => {
-                      cpu.write().unwrap().hardware_interrupt_routine =
+                      cpu.hardware_interrupt_routine =
                           Some(Box::new(move |cpu: &mut Cpu| {
                               cpu.registers[0] = c.into();
                           }));
