@@ -40,7 +40,7 @@ fn main() {
             
             if cycles >= CYCLES_PER_FRAME * 2 {
                 Hardware::draw_vga_buffer(&cpu);
-                //Hardware::handle_input(&mut cpu);
+                Hardware::handle_input(&mut cpu);
                 cycles = 0;
             }
             
