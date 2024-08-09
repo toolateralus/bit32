@@ -35,7 +35,7 @@ fn main() {
         
         const CYCLES_PER_FRAME: usize = 15_000_000 / 60;
         
-        while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
+        while !cpu.has_flag(Cpu::HALT_FLAG) {
             cpu.cycle();
             
             if cycles >= CYCLES_PER_FRAME * 2 {

@@ -59,7 +59,7 @@ impl Debugger {
         let mut state: DebugState = DebugState::Pause;
         execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
         
-        while (cpu.flags() & Cpu::HALT_FLAG) != Cpu::HALT_FLAG {
+        while !cpu.has_flag(Cpu::HALT_FLAG) {
 
             execute!(stdout, cursor::MoveTo(0, 0)).unwrap();
             self.display_registers(&cpu);

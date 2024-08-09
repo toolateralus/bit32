@@ -96,9 +96,14 @@ pub enum Opcode {
     AddShortReg,
     AddLongReg,
 
-    AddByteMem,
-    AddShortMem,
-    AddLongMem,
+    // Add Carry
+    AddCarryByteImm,
+    AddCarryShortImm,
+    AddCarryLongImm,
+
+    AddCarryByteReg,
+    AddCarryShortReg,
+    AddCarryLongReg,
 
     // Sub
     SubByteImm,
@@ -109,9 +114,14 @@ pub enum Opcode {
     SubShortReg,
     SubLongReg,
 
-    SubByteMem,
-    SubShortMem,
-    SubLongMem,
+    // Sub Borrow
+    SubBorrowByteImm,
+    SubBorrowShortImm,
+    SubBorrowLongImm,
+
+    SubBorrowByteReg,
+    SubBorrowShortReg,
+    SubBorrowLongReg,
 
     // Mul
     MulByteImm,
@@ -122,10 +132,6 @@ pub enum Opcode {
     MulShortReg,
     MulLongReg,
 
-    MulByteMem,
-    MulShortMem,
-    MulLongMem,
-
     // Div
     DivByteImm,
     DivShortImm,
@@ -135,9 +141,23 @@ pub enum Opcode {
     DivShortReg,
     DivLongReg,
 
-    DivByteMem,
-    DivShortMem,
-    DivLongMem,
+    // Signed Mul
+    SignedMulByteImm,
+    SignedMulShortImm,
+    SignedMulLongImm,
+
+    SignedMulByteReg,
+    SignedMulShortReg,
+    SignedMulLongReg,
+
+    // Signed Div
+    SignedDivByteImm,
+    SignedDivShortImm,
+    SignedDivLongImm,
+
+    SignedDivByteReg,
+    SignedDivShortReg,
+    SignedDivLongReg,
 
     // And
     AndByteImm,
@@ -148,9 +168,23 @@ pub enum Opcode {
     AndShortReg,
     AndLongReg,
 
-    AndByteMem,
-    AndShortMem,
-    AndLongMem,
+    // Or
+    OrByteImm,
+    OrShortImm,
+    OrLongImm,
+
+    OrByteReg,
+    OrShortReg,
+    OrLongReg,
+
+    // Xor
+    XorByteImm,
+    XorShortImm,
+    XorLongImm,
+
+    XorByteReg,
+    XorShortReg,
+    XorLongReg,
 
     // Push
     PushByteImm,
@@ -161,37 +195,77 @@ pub enum Opcode {
     PushShortReg,
     PushLongReg,
 
-    PushByteMem,
-    PushShortMem,
-    PushLongMem,
-
-    // Pop
-    PopByteReg,
-    PopShortReg,
-    PopLongReg,
-
-    PopByteMem,
-    PopShortMem,
-    PopLongMem,
-
-    PopByteIndirect,
-    PopShortIndirect,
-    PopLongIndirect,
-
-    // Jumps
-    JumpEqual,
-    JumpNotEqual,
-    JumpGreater,
-    JumpLess,
-    JumpImm,
-    JumpReg,
-
     // Compare
     CompareByteImm,
     CompareShortImm,
     CompareLongImm,
 
-    CompareReg,
+    CompareByteReg,
+    CompareShortReg,
+    CompareLongReg,
+
+    // Logical Shift Left
+    LogShiftLeftImm,
+    LogShiftLeftReg,
+
+    // Logical Shift Right
+    LogShiftRightImm,
+    LogShiftRightReg,
+
+    // Arithmetic Shift Left
+    ArithShiftLeftImm,
+    ArithShiftLeftReg,
+
+    // Arithmetic Shift Right
+    ArithShiftRightImm,
+    ArithShiftRightReg,
+
+    // Arithmetic Shift Left
+    RotateLeftImm,
+    RotateLeftReg,
+
+    // Arithmetic Shift Right
+    RotateRightImm,
+    RotateRightReg,
+
+    // Pop
+    PopByte,
+    PopShort,
+    PopLong,
+
+    // Negate
+    NegateByte,
+    NegateShort,
+    NegateLong,
+
+    // Not
+    NotByte,
+    NotShort,
+    NotLong,
+
+    // Increment
+    IncrementByte,
+    IncrementShort,
+    IncrementLong,
+
+    // Decrement
+    DecrementByte,
+    DecrementShort,
+    DecrementLong,
+
+    // Jumps
+    JumpEqual,
+    JumpNotEqual,
+    JumpGreater,
+    JumpGreaterEqual,
+    JumpLess,
+    JumpLessEqual,
+    JumpSignedGreater,
+    JumpSignedGreaterEqual,
+    JumpSignedLess,
+    JumpSignedLessEqual,
+    JumpImm,
+    JumpReg,
     
     // TODO: implement idt & io ports.
     Interrupt,
@@ -201,6 +275,7 @@ pub enum Opcode {
     Call,
     Return,
     RustCall,
+    ClearCarry,
     
     Nop,
 }
@@ -312,14 +387,44 @@ impl Opcode {
             | Opcode::PushByteReg
             | Opcode::PushShortReg
             | Opcode::PushLongReg
-            | Opcode::PopByteReg
-            | Opcode::PopShortReg
-            | Opcode::PopLongReg
-            | Opcode::PopByteIndirect
-            | Opcode::PopShortIndirect
-            | Opcode::PopLongIndirect
+            | Opcode::AddCarryByteReg
+            | Opcode::AddCarryShortReg
+            | Opcode::AddCarryLongReg
+            | Opcode::SubBorrowByteReg
+            | Opcode::SubBorrowShortReg
+            | Opcode::SubBorrowLongReg
+            | Opcode::SignedMulByteReg
+            | Opcode::SignedMulShortReg
+            | Opcode::SignedMulLongReg
+            | Opcode::SignedDivByteReg
+            | Opcode::SignedDivShortReg
+            | Opcode::SignedDivLongReg
+            | Opcode::OrByteReg
+            | Opcode::OrShortReg
+            | Opcode::OrLongReg
+            | Opcode::XorByteReg
+            | Opcode::XorShortReg
+            | Opcode::XorLongReg
+            | Opcode::CompareByteReg
+            | Opcode::CompareShortReg
+            | Opcode::CompareLongReg
             | Opcode::JumpReg
-            | Opcode::CompareReg
+            // reg only
+            | Opcode::PopByte
+            | Opcode::PopShort
+            | Opcode::PopLong
+            | Opcode::NegateByte
+            | Opcode::NegateShort
+            | Opcode::NegateLong
+            | Opcode::IncrementByte
+            | Opcode::IncrementShort
+            | Opcode::IncrementLong
+            | Opcode::DecrementByte
+            | Opcode::DecrementShort
+            | Opcode::DecrementLong
+            | Opcode::NotByte
+            | Opcode::NotShort
+            | Opcode::NotLong
             // immediate bytes
             | Opcode::AddByteImm
             | Opcode::SubByteImm
@@ -328,6 +433,25 @@ impl Opcode {
             | Opcode::AndByteImm
             | Opcode::PushByteImm
             | Opcode::CompareByteImm
+            | Opcode::AddCarryByteImm
+            | Opcode::SubBorrowByteImm
+            | Opcode::SignedMulByteImm
+            | Opcode::SignedDivByteImm
+            | Opcode::OrByteImm
+            | Opcode::XorByteImm
+            // shifts
+            | Opcode::LogShiftLeftImm
+            | Opcode::LogShiftLeftReg
+            | Opcode::LogShiftRightImm
+            | Opcode::LogShiftRightReg
+            | Opcode::ArithShiftLeftImm
+            | Opcode::ArithShiftLeftReg
+            | Opcode::ArithShiftRightImm
+            | Opcode::ArithShiftRightReg
+            | Opcode::RotateLeftImm
+            | Opcode::RotateLeftReg
+            | Opcode::RotateRightImm
+            | Opcode::RotateRightReg
             // other
             | Opcode::Interrupt
             | Opcode::RustCall => (1,0),
@@ -339,7 +463,13 @@ impl Opcode {
             | Opcode::DivShortImm
             | Opcode::AndShortImm
             | Opcode::PushShortImm
-            | Opcode::CompareShortImm => (2,0),
+            | Opcode::CompareShortImm
+            | Opcode::AddCarryShortImm
+            | Opcode::SubBorrowShortImm
+            | Opcode::SignedMulShortImm
+            | Opcode::SignedDivShortImm
+            | Opcode::OrShortImm
+            | Opcode::XorShortImm => (2,0),
 
             // long imm
             Opcode::AddLongImm
@@ -349,41 +479,33 @@ impl Opcode {
             | Opcode::AndLongImm
             | Opcode::PushLongImm
             | Opcode::CompareLongImm
-            // mem
-            | Opcode::AddByteMem
-            | Opcode::AddShortMem
-            | Opcode::AddLongMem
-            | Opcode::SubByteMem
-            | Opcode::SubShortMem
-            | Opcode::SubLongMem
-            | Opcode::MulByteMem
-            | Opcode::MulShortMem
-            | Opcode::MulLongMem
-            | Opcode::DivByteMem
-            | Opcode::DivShortMem
-            | Opcode::DivLongMem
-            | Opcode::AndByteMem
-            | Opcode::AndShortMem
-            | Opcode::AndLongMem
-            | Opcode::PushByteMem
-            | Opcode::PushShortMem
-            | Opcode::PushLongMem
-            | Opcode::PopByteMem
-            | Opcode::PopShortMem
-            | Opcode::PopLongMem
-            // other
+            | Opcode::AddCarryLongImm
+            | Opcode::SubBorrowLongImm
+            | Opcode::SignedMulLongImm
+            | Opcode::SignedDivLongImm
+            | Opcode::OrLongImm
+            | Opcode::XorLongImm
+            // jumps
             | Opcode::JumpEqual
             | Opcode::JumpNotEqual
             | Opcode::JumpGreater
             | Opcode::JumpLess
             | Opcode::JumpImm
+            | Opcode::JumpGreaterEqual
+            | Opcode::JumpLessEqual
+            | Opcode::JumpSignedGreater
+            | Opcode::JumpSignedGreaterEqual
+            | Opcode::JumpSignedLess
+            | Opcode::JumpSignedLessEqual
+            // call
             | Opcode::Call => (4, 0),
 
             // nullary ops
             Opcode::InterruptReturn
             | Opcode::Return
-            | Opcode::Nop
-            | Opcode::Hlt => (0,0),
+            | Opcode::Hlt
+            | Opcode::ClearCarry
+            | Opcode::Nop => (0,0),
         }
     }
 }
