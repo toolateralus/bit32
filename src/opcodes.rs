@@ -205,28 +205,64 @@ pub enum Opcode {
     CompareLongReg,
 
     // Logical Shift Left
-    LogShiftLeftImm,
-    LogShiftLeftReg,
+    LogShiftLeftByteImm,
+    LogShiftLeftShortImm,
+    LogShiftLeftLongImm,
+
+    LogShiftLeftByteReg,
+    LogShiftLeftShortReg,
+    LogShiftLeftLongReg,
+
 
     // Logical Shift Right
-    LogShiftRightImm,
-    LogShiftRightReg,
+    LogShiftRightByteImm,
+    LogShiftRightShortImm,
+    LogShiftRightLongImm,
+
+    LogShiftRightByteReg,
+    LogShiftRightShortReg,
+    LogShiftRightLongReg,
+
 
     // Arithmetic Shift Left
-    ArithShiftLeftImm,
-    ArithShiftLeftReg,
+    ArithShiftLeftByteImm,
+    ArithShiftLeftShortImm,
+    ArithShiftLeftLongImm,
+
+    ArithShiftLeftByteReg,
+    ArithShiftLeftShortReg,
+    ArithShiftLeftLongReg,
+
 
     // Arithmetic Shift Right
-    ArithShiftRightImm,
-    ArithShiftRightReg,
+    ArithShiftRightByteImm,
+    ArithShiftRightShortImm,
+    ArithShiftRightLongImm,
 
-    // Arithmetic Shift Left
-    RotateLeftImm,
-    RotateLeftReg,
+    ArithShiftRightByteReg,
+    ArithShiftRightShortReg,
+    ArithShiftRightLongReg,
 
-    // Arithmetic Shift Right
-    RotateRightImm,
-    RotateRightReg,
+
+    // Rotate Left
+    RotateLeftByteImm,
+    RotateLeftShortImm,
+    RotateLeftLongImm,
+
+    RotateLeftByteReg,
+    RotateLeftShortReg,
+    RotateLeftLongReg,
+
+
+    // Rotate Right
+    RotateRightByteImm,
+    RotateRightShortImm,
+    RotateRightLongImm,
+
+    RotateRightByteReg,
+    RotateRightShortReg,
+    RotateRightLongReg,
+
 
     // Pop
     PopByte,
@@ -409,6 +445,24 @@ impl Opcode {
             | Opcode::CompareShortReg
             | Opcode::CompareLongReg
             | Opcode::JumpReg
+            | Opcode::LogShiftLeftByteReg
+            | Opcode::LogShiftLeftShortReg
+            | Opcode::LogShiftLeftLongReg
+            | Opcode::LogShiftRightByteReg
+            | Opcode::LogShiftRightShortReg
+            | Opcode::LogShiftRightLongReg
+            | Opcode::ArithShiftLeftByteReg
+            | Opcode::ArithShiftLeftShortReg
+            | Opcode::ArithShiftLeftLongReg
+            | Opcode::ArithShiftRightByteReg
+            | Opcode::ArithShiftRightShortReg
+            | Opcode::ArithShiftRightLongReg
+            | Opcode::RotateLeftByteReg
+            | Opcode::RotateLeftShortReg
+            | Opcode::RotateLeftLongReg
+            | Opcode::RotateRightByteReg
+            | Opcode::RotateRightShortReg
+            | Opcode::RotateRightLongReg
             // reg only
             | Opcode::PopByte
             | Opcode::PopShort
@@ -439,24 +493,17 @@ impl Opcode {
             | Opcode::SignedDivByteImm
             | Opcode::OrByteImm
             | Opcode::XorByteImm
-            // shifts
-            | Opcode::LogShiftLeftImm
-            | Opcode::LogShiftLeftReg
-            | Opcode::LogShiftRightImm
-            | Opcode::LogShiftRightReg
-            | Opcode::ArithShiftLeftImm
-            | Opcode::ArithShiftLeftReg
-            | Opcode::ArithShiftRightImm
-            | Opcode::ArithShiftRightReg
-            | Opcode::RotateLeftImm
-            | Opcode::RotateLeftReg
-            | Opcode::RotateRightImm
-            | Opcode::RotateRightReg
+            | Opcode::LogShiftLeftByteImm
+            | Opcode::LogShiftRightByteImm
+            | Opcode::ArithShiftLeftByteImm
+            | Opcode::ArithShiftRightByteImm
+            | Opcode::RotateLeftByteImm
+            | Opcode::RotateRightByteImm
             // other
             | Opcode::Interrupt
             | Opcode::RustCall => (1,0),
 
-            // shorts imm
+            // short imm
             Opcode::AddShortImm
             | Opcode::SubShortImm
             | Opcode::MulShortImm
@@ -469,7 +516,13 @@ impl Opcode {
             | Opcode::SignedMulShortImm
             | Opcode::SignedDivShortImm
             | Opcode::OrShortImm
-            | Opcode::XorShortImm => (2,0),
+            | Opcode::XorShortImm
+            | Opcode::LogShiftLeftShortImm
+            | Opcode::LogShiftRightShortImm
+            | Opcode::ArithShiftLeftShortImm
+            | Opcode::ArithShiftRightShortImm
+            | Opcode::RotateLeftShortImm
+            | Opcode::RotateRightShortImm => (2,0),
 
             // long imm
             Opcode::AddLongImm
@@ -485,6 +538,12 @@ impl Opcode {
             | Opcode::SignedDivLongImm
             | Opcode::OrLongImm
             | Opcode::XorLongImm
+            | Opcode::LogShiftLeftLongImm
+            | Opcode::LogShiftRightLongImm
+            | Opcode::ArithShiftLeftLongImm
+            | Opcode::ArithShiftRightLongImm
+            | Opcode::RotateLeftLongImm
+            | Opcode::RotateRightLongImm
             // jumps
             | Opcode::JumpEqual
             | Opcode::JumpNotEqual

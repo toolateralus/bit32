@@ -1539,60 +1539,181 @@ impl Cpu {
                 let res = self.registers[0] as u32 ^ val;
                 self.registers[0] = res as u32;
             }
-            Opcode::LogShiftLeftImm => {
+
+            Opcode::LogShiftLeftByteImm => {
                 let val = self.next_byte();
-                self.registers[0] = (self.registers[0] as u32).shl(val);
+                self.registers[0] = (self.registers[0] as u8).shl(val) as u32;
             }
-            Opcode::LogShiftRightImm => {
+            Opcode::LogShiftLeftShortImm => {
                 let val = self.next_byte();
-                self.registers[0] = (self.registers[0] as u32).shr(val);
+                self.registers[0] = (self.registers[0] as u16).shl(val) as u32;
             }
-            Opcode::ArithShiftLeftImm => {
+            Opcode::LogShiftLeftLongImm => {
                 let val = self.next_byte();
-                self.registers[0] = (self.registers[0] as u32).shl(val);
+                self.registers[0] = (self.registers[0] as u32).shl(val) as u32;
             }
-            Opcode::ArithShiftRightImm => {
+
+            Opcode::LogShiftRightByteImm => {
                 let val = self.next_byte();
-                self.registers[0] = (self.registers[0] as u32).shr(val);
+                self.registers[0] = (self.registers[0] as u8).shr(val) as u32;
             }
-            Opcode::RotateLeftImm => {
+            Opcode::LogShiftRightShortImm => {
                 let val = self.next_byte();
-                self.registers[0] = self.registers[0].rotate_left(val as u32);
+                self.registers[0] = (self.registers[0] as u16).shr(val) as u32;
             }
-            Opcode::RotateRightImm => {
+            Opcode::LogShiftRightLongImm => {
                 let val = self.next_byte();
-                self.registers[0] = self.registers[0].rotate_right(val as u32);
+                self.registers[0] = (self.registers[0] as u32).shr(val) as u32;
             }
-            Opcode::LogShiftLeftReg => {
+
+            Opcode::ArithShiftLeftByteImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u8).shl(val) as u32;
+            }
+            Opcode::ArithShiftLeftShortImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u16).shl(val) as u32;
+            }
+            Opcode::ArithShiftLeftLongImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u32).shl(val) as u32;
+            }
+
+            Opcode::ArithShiftRightByteImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u8).shr(val) as u32;
+            }
+            Opcode::ArithShiftRightShortImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u16).shr(val) as u32;
+            }
+            Opcode::ArithShiftRightLongImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u32).shr(val) as u32;
+            }
+
+            Opcode::RotateLeftByteImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u8).rotate_left(val as u32) as u32;
+            }
+            Opcode::RotateLeftShortImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u16).rotate_left(val as u32) as u32;
+            }
+            Opcode::RotateLeftLongImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u32).rotate_left(val as u32) as u32;
+            }
+
+            Opcode::RotateRightByteImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u8).rotate_right(val as u32) as u32;
+            }
+            Opcode::RotateRightShortImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u16).rotate_right(val as u32) as u32;
+            }
+            Opcode::RotateRightLongImm => {
+                let val = self.next_byte();
+                self.registers[0] = (self.registers[0] as u32).rotate_right(val as u32) as u32;
+            }
+
+            Opcode::LogShiftLeftByteReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = (self.registers[0] as u32).shl(val);
+                let val = self.registers[reg] as u8;
+                self.registers[0] = (self.registers[0] as u8).shl(val) as u32;
             }
-            Opcode::LogShiftRightReg => {
+            Opcode::LogShiftLeftShortReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = (self.registers[0] as u32).shr(val);
+                let val = self.registers[reg] as u16;
+                self.registers[0] = (self.registers[0] as u16).shl(val) as u32;
             }
-            Opcode::ArithShiftLeftReg => {
+            Opcode::LogShiftLeftLongReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = (self.registers[0] as u32).shl(val);
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u32).shl(val) as u32;
             }
-            Opcode::ArithShiftRightReg => {
+
+            Opcode::LogShiftRightByteReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = (self.registers[0] as u32).shr(val);
+                let val = self.registers[reg] as u8;
+                self.registers[0] = (self.registers[0] as u8).shr(val) as u32;
             }
-            Opcode::RotateLeftReg => {
+            Opcode::LogShiftRightShortReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = self.registers[0].rotate_left(val as u32);
+                let val = self.registers[reg] as u16;
+                self.registers[0] = (self.registers[0] as u16).shr(val) as u32;
             }
-            Opcode::RotateRightReg => {
+            Opcode::LogShiftRightLongReg => {
                 let reg = self.next_byte() as usize;
-                let val = self.registers[reg];
-                self.registers[0] = self.registers[0].rotate_right(val as u32);
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u32).shr(val) as u32;
             }
+
+            Opcode::ArithShiftLeftByteReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u8;
+                self.registers[0] = (self.registers[0] as i8).shl(val) as u32;
+            }
+            Opcode::ArithShiftLeftShortReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u16;
+                self.registers[0] = (self.registers[0] as i16).shl(val) as u32;
+            }
+            Opcode::ArithShiftLeftLongReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as i32).shl(val) as u32;
+            }
+
+            Opcode::ArithShiftRightByteReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u8;
+                self.registers[0] = (self.registers[0] as i8).shr(val) as u32;
+            }
+            Opcode::ArithShiftRightShortReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u16;
+                self.registers[0] = (self.registers[0] as i16).shr(val) as u32;
+            }
+            Opcode::ArithShiftRightLongReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as i32).shr(val) as u32;
+            }
+
+            Opcode::RotateLeftByteReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u8).rotate_left(val) as u32;
+            }
+            Opcode::RotateLeftShortReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u16).rotate_left(val) as u32;
+            }
+            Opcode::RotateLeftLongReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u32).rotate_left(val) as u32;
+            }
+
+            Opcode::RotateRightByteReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u8).rotate_right(val) as u32;
+            }
+            Opcode::RotateRightShortReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u16).rotate_right(val) as u32;
+            }
+            Opcode::RotateRightLongReg => {
+                let reg = self.next_byte() as usize;
+                let val = self.registers[reg] as u32;
+                self.registers[0] = (self.registers[0] as u32).rotate_right(val) as u32;
+            }
+            
             Opcode::NotByte => {
                 let reg = self.next_byte() as usize;
                 let val = (self.registers[reg] as i8).not();
