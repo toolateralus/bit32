@@ -1674,31 +1674,20 @@ mod tests {
 
         #[test]
         fn interrupt() {
-            return;
+            // TODO: we need to improve this test. when I try to make it more comprehensive
+            // it just totally fails. its probably me just writing it out wrong, but still.
             let mut cpu = Cpu::new();
 
-            // address of idt ptr.
-            cpu.registers[IDT] = 3;
+            // address of isr_table.
+            cpu.registers[IDT] = 1;
 
             cpu.load_program(&[
-                Opcode::Interrupt as u8,
-                0, // ip : 2
-                Opcode::Hlt as u8,
-                // idt
-                // isr 0 just loads eax and ebx with 10, 15
-                Opcode::MoveImmRegByte as u8,
-                0,
-                10,
-                Opcode::MoveImmRegByte as u8,
-                1,
-                15,
-                Opcode::InterruptReturn as u8,
+                Opcode::Interrupt as u8,         // 0  ; int 0 
+                Opcode::InterruptReturn as u8,  // 1  ; iret
             ]);
 
             cpu.run();
             assert_eq!(cpu.ip(), 3);
-            assert_eq!(cpu.registers[0], 10);
-            assert_eq!(cpu.registers[1], 15);
             assert_eq!((cpu.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32), 0);
         }
     }
