@@ -15,7 +15,7 @@ pub mod hardware;
 pub mod opcodes;
 pub mod test;
 fn main() {
-    let file = "../asm32/test.o";
+    let file = "../asm32/examples/test.o";
     
     if env::args().len() > 1 && env::args().nth(1).unwrap() == "g" {
         let mut debugger = Debugger {

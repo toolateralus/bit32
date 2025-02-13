@@ -4,6 +4,7 @@ use core::fmt;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Neg, Not, Shl, Shr};
+use std::path::Path;
 use std::str::Utf8Error;
 
 pub const NUM_REGISTERS: usize = 22;
@@ -1207,7 +1208,7 @@ impl Cpu {
         self.memory.buffer.splice(0..program.len(), iter);
     }
 
-    pub fn load_program_from_file(&mut self, file_path: &str) -> std::io::Result<()> {
+    pub fn load_program_from_file<T: AsRef<Path> + ?Sized>(&mut self, file_path: &T) -> std::io::Result<()> {
         let mut file = std::fs::File::open(file_path)?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
