@@ -1,6 +1,6 @@
 use cpu::Cpu;
 use hardware::Hardware;
-use std::env;
+use std::env::{self, current_dir};
 use std::io::stdout;
 use std::time::Instant;
 
@@ -15,17 +15,22 @@ pub mod hardware;
 pub mod opcodes;
 pub mod test;
 fn main() {
-    let file = "../asm32/examples/test.o";
-    
-    if env::args().len() > 1 && env::args().nth(1).unwrap() == "g" {
+    let args = env::args().collect::<Vec<String>>();
+    let file = format!("../asm32/examples/{}", args[1]);
+    std::panic::set_hook(Box::new(|info| {
+        execute!(stdout(), LeaveAlternateScreen).unwrap();
+        execute!(stdout(), cursor::Show).unwrap();
+        println!("{}", info);
+    }));
+    if args.contains(&String::from("-g")) {
         let mut debugger = Debugger {
             file: String::new(),
         };
-        debugger.run(file);
+        debugger.run(&file);
     } else {
         let mut cpu = Cpu::new();
         
-        cpu.load_program_from_file(file).unwrap();
+        cpu.load_program_from_file(&file).unwrap();
         
         execute!(stdout(), EnterAlternateScreen).unwrap();
         execute!(stdout(), cursor::Hide).unwrap();
@@ -52,6 +57,7 @@ fn main() {
         let clock_speed_hz = cycles as f64 / seconds;
         
         execute!(stdout(), LeaveAlternateScreen).unwrap();
+        execute!(stdout(), cursor::Show).unwrap();
         println!("Average CPU clock speed: {:.2} Hz", clock_speed_hz);
     }
 }

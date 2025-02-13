@@ -1213,11 +1213,6 @@ impl Cpu {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         self.load_program(&buffer);
-
-        let prog = &self.memory.buffer[..buffer.len()];
-
-        println!("loaded program: {:?}", prog);
-
         Ok(())
     }
 
@@ -1235,7 +1230,7 @@ impl Cpu {
         let instruction = self.next_byte();
         let opcode = Opcode::from(instruction);
 
-        if false {
+        if true {
             log_opcode(&opcode);
         }
 
