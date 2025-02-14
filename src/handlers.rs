@@ -1,4 +1,12 @@
-use crate::cpu::Cpu;
+use std::{
+    arch::asm,
+    ops::{Neg, Not, Shl, Shr},
+};
+
+use crate::{
+    cpu::{Cpu, FLAGS, IDT, IP},
+    functions,
+};
 
 // pub fn hlt(cpu: &mut Cpu);
 
@@ -787,121 +795,607 @@ pub fn signed_div_long_reg(cpu: &mut Cpu) {
     cpu.registers[1] = remainder as u32;
 }
 
-pub fn and_byte_imm(cpu: &mut Cpu) {}
-pub fn and_short_imm(cpu: &mut Cpu) {}
-pub fn and_long_imm(cpu: &mut Cpu) {}
-pub fn and_byte_reg(cpu: &mut Cpu) {}
-pub fn and_short_reg(cpu: &mut Cpu) {}
-pub fn and_long_reg(cpu: &mut Cpu) {}
+pub fn and_byte_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let rhs = cpu.next_byte();
+    cpu.registers[0] = (lhs & rhs) as u32;
+}
+pub fn and_short_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let rhs = cpu.next_short();
+    cpu.registers[0] = (lhs & rhs) as u32;
+}
+pub fn and_long_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_long();
+    cpu.registers[0] = lhs & rhs;
+}
+pub fn and_byte_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let index = cpu.next_byte() as usize;
+    let rhs = (cpu.registers[index] & 0xFF) as u8;
+    cpu.registers[0] = (lhs & rhs) as u32;
+}
+pub fn and_short_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let index = cpu.next_byte() as usize;
+    let rhs = (cpu.registers[index] & 0xFFFF) as u16;
+    cpu.registers[0] = (lhs & rhs) as u32;
+}
+pub fn and_long_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index];
+    cpu.registers[0] = lhs & rhs;
+}
 
-pub fn or_byte_imm(cpu: &mut Cpu) {}
-pub fn or_short_imm(cpu: &mut Cpu) {}
-pub fn or_long_imm(cpu: &mut Cpu) {}
-pub fn or_byte_reg(cpu: &mut Cpu) {}
-pub fn or_short_reg(cpu: &mut Cpu) {}
-pub fn or_long_reg(cpu: &mut Cpu) {}
+pub fn or_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_short();
+    let res = cpu.registers[0] as u16 | val;
+    cpu.registers[0] = res as u32;
+}
+pub fn or_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_short();
+    let res = cpu.registers[0] as u16 | val;
+    cpu.registers[0] = res as u32;
+}
+pub fn or_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_long();
+    let res = cpu.registers[0] as u32 | val;
+    cpu.registers[0] = res as u32;
+}
+pub fn or_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    let res = cpu.registers[0] as u8 | val;
+    cpu.registers[0] = res as u32;
+}
+pub fn or_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_short() as usize;
+    let val = cpu.registers[reg] as u16;
+    let res = cpu.registers[0] as u16 | val;
+    cpu.registers[0] = res as u32;
+}
+pub fn or_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_long() as usize;
+    let val = cpu.registers[reg] as u32;
+    let res = cpu.registers[0] as u32 | val;
+    cpu.registers[0] = res as u32;
+}
 
-pub fn xor_byte_imm(cpu: &mut Cpu) {}
-pub fn xor_short_imm(cpu: &mut Cpu) {}
-pub fn xor_long_imm(cpu: &mut Cpu) {}
-pub fn xor_byte_reg(cpu: &mut Cpu) {}
-pub fn xor_short_reg(cpu: &mut Cpu) {}
-pub fn xor_long_reg(cpu: &mut Cpu) {}
+pub fn xor_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    let res = cpu.registers[0] as u8 ^ val;
+    cpu.registers[0] = res as u32;
+}
+pub fn xor_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_short();
+    let res = cpu.registers[0] as u16 ^ val;
+    cpu.registers[0] = res as u32;
+}
+pub fn xor_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_long();
+    let res = cpu.registers[0] as u32 ^ val;
+    cpu.registers[0] = res as u32;
+}
 
-pub fn push_byte_imm(cpu: &mut Cpu) {}
-pub fn push_short_imm(cpu: &mut Cpu) {}
-pub fn push_long_imm(cpu: &mut Cpu) {}
-pub fn push_byte_reg(cpu: &mut Cpu) {}
-pub fn push_short_reg(cpu: &mut Cpu) {}
-pub fn push_long_reg(cpu: &mut Cpu) {}
+pub fn xor_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    let res = cpu.registers[0] as u8 ^ val;
+    cpu.registers[0] = res as u32;
+}
+pub fn xor_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_short() as usize;
+    let val = cpu.registers[reg] as u16;
+    let res = cpu.registers[0] as u16 ^ val;
+    cpu.registers[0] = res as u32;
+}
+pub fn xor_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_long() as usize;
+    let val = cpu.registers[reg] as u32;
+    let res = cpu.registers[0] as u32 ^ val;
+    cpu.registers[0] = res as u32;
+}
 
-pub fn compare_byte_imm(cpu: &mut Cpu) {}
-pub fn compare_short_imm(cpu: &mut Cpu) {}
-pub fn compare_long_imm(cpu: &mut Cpu) {}
-pub fn compare_byte_reg(cpu: &mut Cpu) {}
-pub fn compare_short_reg(cpu: &mut Cpu) {}
-pub fn compare_long_reg(cpu: &mut Cpu) {}
+pub fn push_byte_imm(cpu: &mut Cpu) {
+    cpu.dec_sp(1);
+    let value = cpu.next_byte();
+    cpu.memory.set_byte(cpu.sp(), value);
+}
+pub fn push_short_imm(cpu: &mut Cpu) {
+    cpu.dec_sp(2);
+    let value = cpu.next_short();
+    cpu.memory.set_short(cpu.sp(), value);
+}
+pub fn push_long_imm(cpu: &mut Cpu) {
+    cpu.dec_sp(4);
+    let value = cpu.next_long();
+    cpu.memory.set_long(cpu.sp(), value);
+}
 
-pub fn log_shift_left_byte_imm(cpu: &mut Cpu) {}
-pub fn log_shift_left_short_imm(cpu: &mut Cpu) {}
-pub fn log_shift_left_long_imm(cpu: &mut Cpu) {}
-pub fn log_shift_left_byte_reg(cpu: &mut Cpu) {}
-pub fn log_shift_left_short_reg(cpu: &mut Cpu) {}
-pub fn log_shift_left_long_reg(cpu: &mut Cpu) {}
+pub fn push_byte_reg(cpu: &mut Cpu) {
+    cpu.dec_sp(1);
+    let index = cpu.next_byte() as usize;
+    let value = (cpu.registers[index] & 0xFF) as u8;
+    cpu.memory.set_byte(cpu.sp(), value);
+}
+pub fn push_short_reg(cpu: &mut Cpu) {
+    cpu.dec_sp(2);
+    let index = cpu.next_byte() as usize;
+    let value = (cpu.registers[index] & 0xFFFF) as u16;
+    cpu.memory.set_short(cpu.sp(), value);
+}
+pub fn push_long_reg(cpu: &mut Cpu) {
+    cpu.dec_sp(4);
+    let index = cpu.next_byte() as usize;
+    let value = cpu.registers[index];
+    cpu.memory.set_long(cpu.sp(), value);
+}
 
-pub fn log_shift_right_byte_imm(cpu: &mut Cpu) {}
-pub fn log_shift_right_short_imm(cpu: &mut Cpu) {}
-pub fn log_shift_right_long_imm(cpu: &mut Cpu) {}
-pub fn log_shift_right_byte_reg(cpu: &mut Cpu) {}
-pub fn log_shift_right_short_reg(cpu: &mut Cpu) {}
-pub fn log_shift_right_long_reg(cpu: &mut Cpu) {}
+pub fn compare_byte_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_byte();
+    cpu.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
+}
+pub fn compare_short_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_short();
+    cpu.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
+}
+pub fn compare_long_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_long();
+    cpu.registers[0] = if lhs == rhs { 1 } else { 0 };
+}
 
-pub fn arith_shift_left_byte_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_left_short_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_left_long_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_left_byte_reg(cpu: &mut Cpu) {}
-pub fn arith_shift_left_short_reg(cpu: &mut Cpu) {}
-pub fn arith_shift_left_long_reg(cpu: &mut Cpu) {}
+pub fn compare_byte_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as u8;
+    cpu.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
+}
+pub fn compare_short_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as u16;
+    cpu.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
+}
+pub fn compare_long_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index];
+    cpu.registers[0] = if lhs == rhs { 1 } else { 0 };
+}
 
-pub fn arith_shift_right_byte_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_right_short_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_right_long_imm(cpu: &mut Cpu) {}
-pub fn arith_shift_right_byte_reg(cpu: &mut Cpu) {}
-pub fn arith_shift_right_short_reg(cpu: &mut Cpu) {}
-pub fn arith_shift_right_long_reg(cpu: &mut Cpu) {}
+pub fn log_shift_left_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).shl(val) as u32;
+}
+pub fn log_shift_left_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).shl(val) as u32;
+}
+pub fn log_shift_left_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).shl(val) as u32;
+}
 
-pub fn rotate_left_byte_imm(cpu: &mut Cpu) {}
-pub fn rotate_left_short_imm(cpu: &mut Cpu) {}
-pub fn rotate_left_long_imm(cpu: &mut Cpu) {}
-pub fn rotate_left_byte_reg(cpu: &mut Cpu) {}
-pub fn rotate_left_short_reg(cpu: &mut Cpu) {}
-pub fn rotate_left_long_reg(cpu: &mut Cpu) {}
+pub fn log_shift_left_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    cpu.registers[0] = (cpu.registers[0] as u8).shl(val) as u32;
+}
+pub fn log_shift_left_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u16;
+    cpu.registers[0] = (cpu.registers[0] as u16).shl(val) as u32;
+}
+pub fn log_shift_left_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u32).shl(val) as u32;
+}
 
-pub fn rotate_right_byte_imm(cpu: &mut Cpu) {}
-pub fn rotate_right_short_imm(cpu: &mut Cpu) {}
-pub fn rotate_right_long_imm(cpu: &mut Cpu) {}
-pub fn rotate_right_byte_reg(cpu: &mut Cpu) {}
-pub fn rotate_right_short_reg(cpu: &mut Cpu) {}
-pub fn rotate_right_long_reg(cpu: &mut Cpu) {}
+pub fn log_shift_right_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).shr(val) as u32;
+}
+pub fn log_shift_right_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).shr(val) as u32;
+}
+pub fn log_shift_right_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).shr(val) as u32;
+}
+pub fn log_shift_right_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    cpu.registers[0] = (cpu.registers[0] as u8).shr(val) as u32;
+}
+pub fn log_shift_right_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u16;
+    cpu.registers[0] = (cpu.registers[0] as u16).shr(val) as u32;
+}
+pub fn log_shift_right_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u32).shr(val) as u32;
+}
 
-pub fn pop_byte(cpu: &mut Cpu) {}
-pub fn pop_short(cpu: &mut Cpu) {}
-pub fn pop_long(cpu: &mut Cpu) {}
+pub fn arith_shift_left_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).shl(val) as u32;
+}
+pub fn arith_shift_left_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).shl(val) as u32;
+}
+pub fn arith_shift_left_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).shl(val) as u32;
+}
 
-pub fn negate_byte(cpu: &mut Cpu) {}
-pub fn negate_short(cpu: &mut Cpu) {}
-pub fn negate_long(cpu: &mut Cpu) {}
+pub fn arith_shift_left_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    cpu.registers[0] = (cpu.registers[0] as i8).shl(val) as u32;
+}
+pub fn arith_shift_left_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u16;
+    cpu.registers[0] = (cpu.registers[0] as i16).shl(val) as u32;
+}
+pub fn arith_shift_left_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as i32).shl(val) as u32;
+}
 
-pub fn not_byte(cpu: &mut Cpu) {}
-pub fn not_short(cpu: &mut Cpu) {}
-pub fn not_long(cpu: &mut Cpu) {}
+pub fn arith_shift_right_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).shr(val) as u32;
+}
+pub fn arith_shift_right_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).shr(val) as u32;
+}
+pub fn arith_shift_right_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).shr(val) as u32;
+}
 
-pub fn increment_byte(cpu: &mut Cpu) {}
-pub fn increment_short(cpu: &mut Cpu) {}
-pub fn increment_long(cpu: &mut Cpu) {}
+pub fn arith_shift_right_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u8;
+    cpu.registers[0] = (cpu.registers[0] as i8).shr(val) as u32;
+}
+pub fn arith_shift_right_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u16;
+    cpu.registers[0] = (cpu.registers[0] as i16).shr(val) as u32;
+}
+pub fn arith_shift_right_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as i32).shr(val) as u32;
+}
 
-pub fn decrement_byte(cpu: &mut Cpu) {}
-pub fn decrement_short(cpu: &mut Cpu) {}
-pub fn decrement_long(cpu: &mut Cpu) {}
+pub fn rotate_left_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).rotate_left(val as u32) as u32;
+}
+pub fn rotate_left_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).rotate_left(val as u32) as u32;
+}
+pub fn rotate_left_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).rotate_left(val as u32) as u32;
+}
 
-pub fn jump_equal(cpu: &mut Cpu) {}
-pub fn jump_not_equal(cpu: &mut Cpu) {}
-pub fn jump_greater(cpu: &mut Cpu) {}
-pub fn jump_greater_equal(cpu: &mut Cpu) {}
-pub fn jump_less(cpu: &mut Cpu) {}
-pub fn jump_less_equal(cpu: &mut Cpu) {}
-pub fn jump_signed_greater(cpu: &mut Cpu) {}
-pub fn jump_signed_greaterequal(cpu: &mut Cpu) {}
-pub fn jump_signed_less(cpu: &mut Cpu) {}
-pub fn jump_signed_lessequal(cpu: &mut Cpu) {}
-pub fn jump_imm(cpu: &mut Cpu) {}
-pub fn jump_reg(cpu: &mut Cpu) {}
+pub fn rotate_left_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u8).rotate_left(val) as u32;
+}
+pub fn rotate_left_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u16).rotate_left(val) as u32;
+}
+pub fn rotate_left_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u32).rotate_left(val) as u32;
+}
 
-pub fn interrupt(cpu: &mut Cpu) {}
-pub fn interrupt_return(cpu: &mut Cpu) {}
+pub fn rotate_right_byte_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u8).rotate_right(val as u32) as u32;
+}
+pub fn rotate_right_short_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u16).rotate_right(val as u32) as u32;
+}
+pub fn rotate_right_long_imm(cpu: &mut Cpu) {
+    let val = cpu.next_byte();
+    cpu.registers[0] = (cpu.registers[0] as u32).rotate_right(val as u32) as u32;
+}
 
-pub fn call(cpu: &mut Cpu) {}
-pub fn ret(cpu: &mut Cpu) {}
-pub fn syscall(cpu: &mut Cpu) {}
-pub fn clearcarry(cpu: &mut Cpu) {}
-pub fn nop(cpu: &mut Cpu) {}
+pub fn rotate_right_byte_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u8).rotate_right(val) as u32;
+}
+pub fn rotate_right_short_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u16).rotate_right(val) as u32;
+}
+pub fn rotate_right_long_reg(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg] as u32;
+    cpu.registers[0] = (cpu.registers[0] as u32).rotate_right(val) as u32;
+}
+
+pub fn pop_byte(cpu: &mut Cpu) {
+    let dest = cpu.next_byte() as usize;
+    let value = cpu.memory.byte(cpu.sp());
+    cpu.registers[dest] = value as u32;
+    cpu.inc_sp(1);
+}
+pub fn pop_short(cpu: &mut Cpu) {
+    let dest = cpu.next_byte() as usize;
+    let value = cpu.memory.short(cpu.sp());
+    cpu.registers[dest] = value as u32;
+    cpu.inc_sp(2);
+}
+pub fn pop_long(cpu: &mut Cpu) {
+    let dest = cpu.next_byte() as usize;
+    let value = cpu.memory.long(cpu.sp());
+    cpu.registers[dest] = value as u32;
+    cpu.inc_sp(4);
+}
+
+pub fn negate_byte(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i8).neg();
+    cpu.registers[reg] = val as u32;
+}
+pub fn negate_short(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i16).neg();
+    cpu.registers[reg] = val as u32;
+}
+pub fn negate_long(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i32).neg();
+    cpu.registers[reg] = val as u32;
+}
+
+pub fn not_byte(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i8).not();
+    cpu.registers[reg] = val as u32;
+}
+pub fn not_short(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i16).not();
+    cpu.registers[reg] = val as u32;
+}
+pub fn not_long(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as i32).not();
+    cpu.registers[reg] = val as u32;
+}
+
+pub fn increment_byte(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u8).wrapping_add(1);
+    cpu.registers[reg] = val as u32;
+}
+pub fn increment_short(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u16).wrapping_add(1);
+    cpu.registers[reg] = val as u32;
+}
+pub fn increment_long(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u32).wrapping_add(1);
+    cpu.registers[reg] = val as u32;
+}
+
+pub fn decrement_byte(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u8).wrapping_sub(1);
+    cpu.registers[reg] = val as u32;
+}
+pub fn decrement_short(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u16).wrapping_sub(1);
+    cpu.registers[reg] = val as u32;
+}
+pub fn decrement_long(cpu: &mut Cpu) {
+    let reg = cpu.next_byte() as usize;
+    let val = (cpu.registers[reg] as u32).wrapping_sub(1);
+    cpu.registers[reg] = val as u32;
+}
+
+pub fn jump_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs == rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_not_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs != rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_greater(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs > rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_greater_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs >= rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_less(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs < rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_less_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs <= rhs  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_signed_greater(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs as i32 > rhs as i32  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_signed_greater_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs as i32 >= rhs as i32  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_signed_less(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if (lhs as i32) < rhs as i32  {
+        cpu.registers[IP] = addr;
+    }
+}
+pub fn jump_signed_less_equal(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    let lhs = cpu.registers[0];
+    let rhs = cpu.registers[1];
+    if lhs as i32 <= rhs as i32  {
+        cpu.registers[IP] = addr;
+    }
+}
+
+pub fn jump_imm(cpu: &mut Cpu) {
+    let addr = cpu.next_long();
+    cpu.registers[IP] = addr;
+}
+pub fn jump_reg(cpu: &mut Cpu) {
+    let index = cpu.next_byte() as usize;
+    let addr = cpu.registers[index];
+    cpu.registers[IP] = addr;
+}
+
+pub fn interrupt(cpu: &mut Cpu) {
+    let busy_in_interrupt = (cpu.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32) != 0;
+
+    // we block interrupts while handling an interrupt.
+    // in a more complicated emulator, you wouldn't have this
+    // loss of data, but it's complicated and we don't do insane
+    // rewinding and reordering of instructions.
+    if busy_in_interrupt {
+        return;
+    }
+
+    let irq = cpu.next_byte() as u32;
+
+    // get the base of the idt
+    let idt_base = cpu.registers[IDT] as u32;
+
+    // idt entries are exactly 4 bytes long
+    let isr_addr = idt_base + (irq * 4);
+
+    // push return address
+    let return_address = cpu.ip();
+    cpu.dec_sp(4);
+    cpu.memory.set_long(cpu.sp(), return_address as u32);
+
+    // Debugging: Print the return address and stack pointer
+    println!(
+        "Interrupt: Pushed return address {:08x} to stack pointer {:08x}",
+        return_address,
+        cpu.sp()
+    );
+
+    // set the interrupt flag
+    cpu.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
+
+    // jump to the interrupt service routine
+    cpu.registers[IP] = cpu.memory.long(isr_addr as usize);
+}
+pub fn interrupt_return(cpu: &mut Cpu) {
+    // clear the interrupt flag
+    cpu.registers[FLAGS] &= !(Cpu::INTERRUPT_FLAG as u32);
+
+    // pop return address
+    let ret_addr = cpu.memory.long(cpu.sp());
+
+    // Debugging: Print the return address and stack pointer
+    println!(
+        "InterruptReturn: Popped return address {:08x} from stack pointer {:08x}",
+        ret_addr,
+        cpu.sp()
+    );
+
+    cpu.inc_sp(4);
+    cpu.registers[IP] = ret_addr;
+}
+
+pub fn call(cpu: &mut Cpu) {
+    cpu.dec_sp(4);
+    let addr = cpu.next_long();
+    cpu.memory.set_long(cpu.sp(), cpu.ip() as u32);
+    cpu.registers[IP] = addr;
+}
+pub fn ret(cpu: &mut Cpu) {
+    let addr = cpu.memory.long(cpu.sp());
+    cpu.inc_sp(4);
+    cpu.registers[IP] = addr;
+}
+
+pub fn syscall(cpu: &mut Cpu) {
+    let idx = cpu.next_byte() as usize;
+    match idx {
+        0 => functions::log_memory(cpu),
+        1 => functions::log(cpu),
+        2 => functions::print_string(cpu),
+        3 => functions::print_register(cpu),
+        _ => panic!("invalid rust function: {}", idx),
+    }
+}
+pub fn clear_carry(cpu: &mut Cpu) {
+    cpu.set_flag(Cpu::CARRY_FLAG, false);
+}
+
+pub fn nop(_: &mut Cpu) {
+    // do fricken nothin
+}
