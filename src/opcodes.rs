@@ -310,7 +310,7 @@ pub enum Opcode {
     // InByte,
     Call,
     Return,
-    RustCall,
+    Syscall,
     ClearCarry,
     
     Nop,
@@ -501,7 +501,7 @@ impl Opcode {
             | Opcode::RotateRightByteImm
             // other
             | Opcode::Interrupt
-            | Opcode::RustCall => (1,0),
+            | Opcode::Syscall => (1,0),
 
             // short imm
             Opcode::AddShortImm

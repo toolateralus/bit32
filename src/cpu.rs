@@ -1241,7 +1241,7 @@ impl Cpu {
         match opcode {
             Opcode::Interrupt => {
                 let busy_in_interrupt = (self.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32) != 0;
-            
+
                 // we block interrupts while handling an interrupt.
                 // in a more complicated emulator, you wouldn't have this
                 // loss of data, but it's complicated and we don't do insane
@@ -1249,39 +1249,47 @@ impl Cpu {
                 if busy_in_interrupt {
                     return;
                 }
-            
+
                 let irq = self.next_byte() as u32;
-            
+
                 // get the base of the idt
                 let idt_base = self.registers[IDT] as u32;
-            
+
                 // idt entries are exactly 4 bytes long
                 let isr_addr = idt_base + (irq * 4);
-            
+
                 // push return address
                 let return_address = self.ip();
                 self.dec_sp(4);
                 self.memory.set_long(self.sp(), return_address as u32);
-            
+
                 // Debugging: Print the return address and stack pointer
-                println!("Interrupt: Pushed return address {:08x} to stack pointer {:08x}", return_address, self.sp());
-            
+                println!(
+                    "Interrupt: Pushed return address {:08x} to stack pointer {:08x}",
+                    return_address,
+                    self.sp()
+                );
+
                 // set the interrupt flag
                 self.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
-            
+
                 // jump to the interrupt service routine
                 self.registers[IP] = self.memory.long(isr_addr as usize);
             }
             Opcode::InterruptReturn => {
                 // clear the interrupt flag
                 self.registers[FLAGS] &= !(Cpu::INTERRUPT_FLAG as u32);
-            
+
                 // pop return address
                 let ret_addr = self.memory.long(self.sp());
-            
+
                 // Debugging: Print the return address and stack pointer
-                println!("InterruptReturn: Popped return address {:08x} from stack pointer {:08x}", ret_addr, self.sp());
-            
+                println!(
+                    "InterruptReturn: Popped return address {:08x} from stack pointer {:08x}",
+                    ret_addr,
+                    self.sp()
+                );
+
                 self.inc_sp(4);
                 self.registers[IP] = ret_addr;
             }
@@ -1293,14 +1301,12 @@ impl Cpu {
 
                 self.registers[IP] = addr;
             }
-
             Opcode::Return => {
                 // pop return address
                 let addr = self.memory.long(self.sp());
                 self.inc_sp(4);
                 self.registers[IP] = addr;
             }
-
             Opcode::JumpEqual
             | Opcode::JumpNotEqual
             | Opcode::JumpGreater
@@ -1474,19 +1480,15 @@ impl Cpu {
                 self.pop(&opcode);
             }
 
-            Opcode::RustCall => {
+            Opcode::Syscall => {
                 let idx = self.next_byte() as usize;
 
                 match idx {
-                    0 => {
-                        functions::log_memory(self);
-                    }
-                    1 => {
-                        functions::print(self);
-                    }
-                    _ => {
-                        panic!("invalid rust function: {}", idx);
-                    }
+                    0 => functions::log_memory(self),
+                    1 => functions::log(self),
+                    2 => functions::print_string(self),
+                    3 => functions::print_register(self),
+                    _ => panic!("invalid rust function: {}", idx)
                 }
             }
 

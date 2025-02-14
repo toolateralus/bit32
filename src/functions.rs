@@ -11,7 +11,7 @@ pub fn get_or_create_log_file() -> File {
         .unwrap()
 }
 
-pub fn print(cpu: &mut Cpu) {
+pub fn log(cpu: &mut Cpu) {
     let addr = cpu.registers[0];
     let string = cpu.memory.utf8(addr as usize).unwrap();
     let mut file = get_or_create_log_file();
@@ -38,4 +38,16 @@ pub fn log_memory(cpu: &mut Cpu) {
     }
     let range = &cpu.memory.buffer[start_idx..end_idx];
     writeln!(file, "memory at {} to {}, {:?}", start_idx, end_idx, range).unwrap();
+}
+
+pub fn print_string(cpu: &mut Cpu) {
+    let addr = cpu.registers[0];
+    let string = cpu.memory.utf8(addr as usize).unwrap();
+    println!("{}", string);
+}
+
+pub fn print_register(cpu: &mut Cpu) {
+    let reg = cpu.registers[0] as usize;
+    cpu.validate_register(reg);
+    println!("{}", cpu.registers[reg]);
 }
