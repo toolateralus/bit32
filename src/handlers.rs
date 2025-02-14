@@ -692,3 +692,97 @@ pub fn div_long_reg(cpu: &mut Cpu) {
     cpu.registers[0] = quotient;
     cpu.registers[1] = remainder;
 }
+
+pub fn signed_mul_byte_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let rhs = cpu.next_byte() as i8;
+    let result = (lhs as i8).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+pub fn signed_mul_short_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let rhs = cpu.next_short() as i16;
+    let result = (lhs as i16).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+pub fn signed_mul_long_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_long() as i32;
+    let result = (lhs as i32).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+
+pub fn signed_mul_byte_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as i8;
+    let result = (lhs as i8).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+pub fn signed_mul_short_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let index = cpu.next_byte() as usize;
+    let rhs = (cpu.registers[index] & 0xFFFF) as i16;
+    let result = (lhs as i16).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+pub fn signed_mul_long_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as i32;
+    let result = (lhs as i32).wrapping_mul(rhs);
+    cpu.registers[0] = result as u32;
+}
+
+pub fn signed_div_byte_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let rhs = cpu.next_byte() as i8;
+    let quotient = (lhs as i8) / rhs;
+    let remainder = (lhs as i8) % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}
+pub fn signed_div_short_imm(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let rhs = cpu.next_short() as i16;
+    let quotient = (lhs as i16) / rhs;
+    let remainder = (lhs as i16) % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}
+pub fn signed_div_long_imm(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let rhs = cpu.next_long() as i32;
+    let quotient = lhs as i32 / rhs;
+    let remainder = lhs as i32 % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}
+
+pub fn signed_div_byte_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as i8;
+    let quotient = (lhs as i8) / rhs;
+    let remainder = (lhs as i8) % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}
+pub fn signed_div_short_reg(cpu: &mut Cpu) {
+    let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+    let index = cpu.next_byte() as usize;
+    let rhs = (cpu.registers[index] & 0xFFFF) as i16;
+    let quotient = (lhs as i16) / rhs;
+    let remainder = (lhs as i16) % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}
+pub fn signed_div_long_reg(cpu: &mut Cpu) {
+    let lhs = cpu.registers[0];
+    let index = cpu.next_byte() as usize;
+    let rhs = cpu.registers[index] as i32;
+    let quotient = lhs as i32 / rhs;
+    let remainder = lhs as i32 % rhs;
+    cpu.registers[0] = quotient as u32;
+    cpu.registers[1] = remainder as u32;
+}

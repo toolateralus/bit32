@@ -220,6 +220,22 @@ pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize] {
         div_byte_reg,
         div_short_reg,
         div_long_reg,
+
+        signed_mul_byte_imm,
+        signed_mul_short_imm,
+        signed_mul_long_imm,
+
+        signed_mul_byte_reg,
+        signed_mul_short_reg,
+        signed_mul_long_reg,
+
+        signed_div_byte_imm,
+        signed_div_short_imm,
+        signed_div_long_imm,
+        
+        signed_div_byte_reg,
+        signed_div_short_reg,
+        signed_div_long_reg,
     ];
 
     todo!();
@@ -1009,8 +1025,6 @@ impl Cpu {
 }
 
 
-
-
 // Comparisons
 impl Cpu {
     fn cmp(&mut cpu, opcode: &Opcode) {
@@ -1191,177 +1205,6 @@ impl Cpu {
             }
             _ => {
                 panic!("invalid pop");
-            }
-        }
-    }
-}
-
-
-// Arithmetic
-impl Cpu {
-    pub fn arith_long(&mut cpu, opcode: &Opcode) {
-        let lhs = cpu.registers[0];
-        match opcode {
-            Opcode::DivLongReg => {
-              
-            }
-
-            Opcode::SignedDivLongImm => {
-                let rhs = cpu.next_long() as i32;
-                let quotient = lhs as i32 / rhs;
-                let remainder = lhs as i32 % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivLongReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = cpu.registers[index] as i32;
-                let quotient = lhs as i32 / rhs;
-                let remainder = lhs as i32 % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulLongImm => {
-                let rhs = cpu.next_long() as i32;
-                let result = (lhs as i32).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            Opcode::SignedMulLongReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = cpu.registers[index] as i32;
-                let result = (lhs as i32).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid long arith instruction");
-            }
-        }
-    }
-    pub fn arith_short(&mut cpu, opcode: &Opcode) {
-        let lhs = (cpu.registers[0] & 0xFFFF) as u16;
-        match opcode {
-            Opcode::SignedDivShortImm => {
-                let rhs = cpu.next_short() as i16;
-                let quotient = (lhs as i16) / rhs;
-                let remainder = (lhs as i16) % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivShortReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = (cpu.registers[index] & 0xFFFF) as i16;
-                let quotient = (lhs as i16) / rhs;
-                let remainder = (lhs as i16) % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulShortImm => {
-                let rhs = cpu.next_short() as i16;
-                let result = (lhs as i16).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            Opcode::SignedMulShortReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = (cpu.registers[index] & 0xFFFF) as i16;
-                let result = (lhs as i16).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid short arith instruction");
-            }
-        }
-    }
-    pub fn arith_byte(&mut cpu, opcode: &Opcode) {
-        let lhs = (cpu.registers[0] & 0xFF) as u8;
-        match opcode {
-
-            Opcode::SignedDivByteImm => {
-                let rhs = cpu.next_byte() as i8;
-                let quotient = (lhs as i8) / rhs;
-                let remainder = (lhs as i8) % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivByteReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = cpu.registers[index] as i8;
-                let quotient = (lhs as i8) / rhs;
-                let remainder = (lhs as i8) % rhs;
-                cpu.registers[0] = quotient as u32;
-                cpu.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulByteImm => {
-                let rhs = cpu.next_byte() as i8;
-                let result = (lhs as i8).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            Opcode::SignedMulByteReg => {
-                let index = cpu.next_byte() as usize;
-                let rhs = cpu.registers[index] as i8;
-                let result = (lhs as i8).wrapping_mul(rhs);
-                cpu.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid byte arith instruction");
-            }
-        }
-    }
-}
-
-// Move
-impl Cpu {
-    pub fn mov_to_reg(&mut cpu, opcode: &Opcode) {
-        let dst_reg = cpu.next_byte() as usize;
-        match opcode {
-            // from absolute memory
-            Opcode::MoveAbsRegByte => {
-              
-            }
-            Opcode::MoveAbsRegShort => {
-
-            }
-            Opcode::MoveAbsRegLong => {
-
-            }
-
-            // from indirect memory
-            Opcode::MoveIndirectRegByte => {
-
-            }
-            Opcode::MoveIndirectRegShort => {
-
-            }
-            Opcode::MoveIndirectRegLong => {
-
-            }
-
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_rel(&mut cpu, opcode: &Opcode) {
-        let dst_adr = cpu.next_long() as usize;
-        match opcode {
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_abs(&mut cpu, opcode: &Opcode) {
-        let dst_adr = cpu.next_long() as usize;
-        match opcode {
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_ind(&mut cpu, opcode: &Opcode) {
-        let dst_reg = cpu.next_byte() as usize;
-        match opcode {
-            // from immediate
-            _ => {
-                panic!("Invalid move opcode");
             }
         }
     }
