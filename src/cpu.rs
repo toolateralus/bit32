@@ -467,7 +467,7 @@ impl Cpu {
             }
         }
         let instruction = self.next_byte();
-        Self::OPCODE_HANDLERS[instruction as usize](self);
+        unsafe { (Self::OPCODE_HANDLERS.get_unchecked(instruction as usize))(self) };
     }
 }
 

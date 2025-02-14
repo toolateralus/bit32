@@ -32,11 +32,13 @@ pub fn move_reg_reg_byte(cpu: &mut Cpu) {
     let src_reg = cpu.next_byte() as usize;
     unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFF; }
 }
+
 pub fn move_reg_reg_short(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
     unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFFFF; }
 }
+
 pub fn move_reg_reg_long(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;

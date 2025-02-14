@@ -24,14 +24,14 @@ fn main() {
         let mut debugger = Debugger {
             file: file.clone(),
         };
-        std::panic::set_hook(Box::new(move |info| {
+        std::panic::set_hook(Box::new( |info| {
             execute!(stdout(), LeaveAlternateScreen).unwrap();
             execute!(stdout(), cursor::Show).unwrap();
             println!("{}", info);
         }));
         debugger.run(&file);
     } else if args.contains(&String::from("graphical")) {
-        std::panic::set_hook(Box::new(move |info| {
+        std::panic::set_hook(Box::new( |info| {
             execute!(stdout(), LeaveAlternateScreen).unwrap();
             execute!(stdout(), cursor::Show).unwrap();
             println!("{}", info);
@@ -66,7 +66,7 @@ fn main() {
 
         execute!(stdout(), LeaveAlternateScreen).unwrap();
         execute!(stdout(), cursor::Show).unwrap();
-        println!("Average CPU clock speed: {:.2} Hz", clock_speed_hz);
+        println!("Average CPU clock speed: {:.2} Mhz", clock_speed_hz / 1_000_000.0);
     } else {
         let mut cpu = Cpu::new();
         cpu.load_program_from_file(&file).unwrap();
@@ -81,6 +81,6 @@ fn main() {
         let elapsed = start.elapsed();
         let seconds = elapsed.as_secs_f64();
         let clock_speed_hz = cycles as f64 / seconds;
-        println!("Average CPU clock speed: {:.2} Hz", clock_speed_hz);
+        println!("Average CPU clock speed: {:.2} Mhz", clock_speed_hz / 1_000_000.0);
     }
 }
