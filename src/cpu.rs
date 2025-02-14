@@ -1,10 +1,8 @@
-use crate::functions::{self, log_opcode};
 use crate::handlers::*;
 use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
 use std::io::Read;
-use std::ops::{Neg, Not, Shl, Shr};
 use std::path::Path;
 use std::str::Utf8Error;
 
@@ -38,20 +36,24 @@ impl Memory {
             buffer: vec![0; MEMORY_SIZE],
         };
     }
+    #[inline(always)]
     pub fn byte(&mut self, addr: usize) -> u8 {
         let b = self.buffer[addr];
         return b;
     }
+    #[inline(always)]
     pub fn short(&mut self, addr: usize) -> u16 {
         let low = self.byte(addr) as u16;
         let high = self.byte(addr + 1) as u16;
         return (high << 8) | low;
     }
+    #[inline(always)]
     pub fn long(&mut self, addr: usize) -> u32 {
         let low = self.short(addr) as u32;
         let high = self.short(addr + 2) as u32;
         return (high << 16) | low;
     }
+    
     pub fn utf8(&mut self, addr: usize) -> Result<String, Utf8Error> {
         let mut bytes = Vec::new();
         let mut i = addr;
@@ -86,10 +88,9 @@ pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
     pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
-    pub opcode_handlers: [OpcodeHandler; Opcode::Nop as usize + 1],
 }
 
-pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize + 1] {
+pub const fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize + 1] {
     [
         hlt,
         
@@ -407,6 +408,7 @@ impl Debug for Cpu {
 
 // General, Cycle, Load Program
 impl Cpu {
+    const OPCODE_HANDLERS: [OpcodeHandler; Opcode::Nop as usize + 1] = get_opcode_handlers();
     pub fn reg_index_to_str(index: &usize) -> &str {
         match index {
             0 => "rax",
@@ -455,10 +457,9 @@ impl Cpu {
         Ok(())
     }
 
+    #[inline(always)]
     pub fn cycle(&mut self) {
-        let flags = self.registers[FLAGS];
-
-        // Extract the function pointer to avoid borrowing issues
+        let flags = unsafe { self.registers.get_unchecked(FLAGS) };
         if flags & Cpu::INTERRUPT_FLAG == Cpu::INTERRUPT_FLAG {
             if let Some(hw_interrupt) = self.hardware_interrupt_routine.take() {
                 (hw_interrupt)(self);
@@ -466,31 +467,40 @@ impl Cpu {
             }
         }
         let instruction = self.next_byte();
-        let opcode = Opcode::from(instruction);
-        if true {
-            log_opcode(&opcode);
-        }
-        self.opcode_handlers[instruction as usize](self);
+        Self::OPCODE_HANDLERS[instruction as usize](self);
     }
 }
 
 // Memory utils
 impl Cpu {
+    #[inline(always)]
     pub fn next_byte(&mut self) -> u8 {
-        let b = self.memory.byte(self.ip());
+        let b = unsafe { *self.memory.buffer.get_unchecked(self.ip() as usize) };
         self.inc_ip(1);
-        return b;
+        b
     }
+    
+    #[inline(always)]
     pub fn next_short(&mut self) -> u16 {
-        let low = self.next_byte() as u16;
-        let high = self.next_byte() as u16;
-        return (high << 8) | low;
+        let ip = self.ip() as usize;
+        let low = unsafe { *self.memory.buffer.get_unchecked(ip) as u16 };
+        let high = unsafe { *self.memory.buffer.get_unchecked(ip + 1) as u16 };
+        self.inc_ip(2);
+        (high << 8) | low
     }
+    
+    #[inline(always)]
     pub fn next_long(&mut self) -> u32 {
-        let low = self.next_short() as u32;
-        let high = self.next_short() as u32;
-        return (high << 16) | low;
+        let ip = self.ip() as usize;
+        let low = unsafe { *self.memory.buffer.get_unchecked(ip) as u32 };
+        let mid = unsafe { *self.memory.buffer.get_unchecked(ip + 1) as u32 };
+        let high = unsafe { *self.memory.buffer.get_unchecked(ip + 2) as u32 };
+        let top = unsafe { *self.memory.buffer.get_unchecked(ip + 3) as u32 };
+        self.inc_ip(4);
+        (top << 24) | (high << 16) | (mid << 8) | low
     }
+    
+    #[inline(always)]
     pub fn next_utf8(&mut self) -> String {
         let string = self.memory.utf8(self.ip()).unwrap();
         self.inc_ip(string.len() as u32);
@@ -512,14 +522,12 @@ impl Cpu {
             registers: [0; NUM_REGISTERS],
             memory: Memory::new(),
             hardware_interrupt_routine: None,
-            opcode_handlers: get_opcode_handlers(),
         };
 
         // TODO: remove this after testing.
         // just a default stack so we don't have to set it up constantly.
         let bp = cpu.memory.buffer.len() - 20;
         cpu.registers[BP] = bp as u32;
-
         let sp = bp - 1000;
         cpu.registers[SP] = sp as u32;
 
@@ -539,7 +547,7 @@ impl Cpu {
     }
     #[inline(always)]
     pub fn flags(&self) -> u32 {
-        self.registers[FLAGS] as u32
+        unsafe { *self.registers.get_unchecked(FLAGS) }
     }
     #[inline(always)]
     pub fn has_flag(&self, flag: u32) -> bool {
@@ -547,19 +555,22 @@ impl Cpu {
     }
     #[inline(always)]
     pub fn set_flag(&mut self, flag: u32, set: bool) {
-        self.registers[FLAGS] = (self.registers[FLAGS] & !flag) | (-(set as i32) as u32 & flag);
+        unsafe {
+            let flags = self.registers.get_unchecked_mut(FLAGS);
+            *flags = (*flags & !flag) | (-(set as i32) as u32 & flag);
+        }
     }
     #[inline(always)]
     pub fn sp(&self) -> usize {
-        self.registers[SP] as usize
+        unsafe { *self.registers.get_unchecked(SP) as usize }
     }
     #[inline(always)]
     pub fn ip(&self) -> usize {
-        self.registers[IP] as usize
+        unsafe { *self.registers.get_unchecked(IP) as usize }
     }
     #[inline(always)]
     pub fn bp(&self) -> usize {
-        self.registers[BP] as usize
+        unsafe { *self.registers.get_unchecked(BP) as usize }
     }
     #[inline(always)]
     pub fn dec_sp(&mut self, value: u32) {
@@ -586,20 +597,6 @@ impl Cpu {
         } else {
             println!("{:?}", self);
             panic!("instruction pointer overflow.");
-        }
-    }
-}
-// Registers
-impl Cpu {
-    // TODO: probably remove these, it's a dang cpu emulator why would we have bounds checking.
-    pub fn validate_register(&self, reg: usize) {
-        if reg >= self.registers.len() {
-            panic!("Invalid register {reg}");
-        }
-    }
-    pub fn validate_registers(&self, regs: &[usize]) {
-        for r in regs {
-            self.validate_register(*r);
         }
     }
 }

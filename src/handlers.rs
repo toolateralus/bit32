@@ -1,7 +1,4 @@
-use std::{
-    arch::asm,
-    ops::{Neg, Not, Shl, Shr},
-};
+use std::ops::{Neg, Not, Shl, Shr};
 
 use crate::{
     cpu::{Cpu, FLAGS, IDT, IP},
@@ -17,39 +14,33 @@ pub fn hlt(cpu: &mut Cpu) {
 pub fn move_imm_reg_byte(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_val = cpu.next_byte();
-    cpu.validate_register(dst_reg);
-    cpu.registers[dst_reg] = src_val as u32;
+    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32; }
 }
 pub fn move_imm_reg_short(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_val = cpu.next_short();
-    cpu.validate_register(dst_reg);
-    cpu.registers[dst_reg] = src_val as u32;
+    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32; }
 }
 pub fn move_imm_reg_long(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
-    let src_val = cpu.next_long();
-    cpu.validate_register(dst_reg);
-    cpu.registers[dst_reg] = src_val;
+    let src_val = cpu.next_long();    
+    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val; }
 }
 
 pub fn move_reg_reg_byte(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    cpu.validate_registers(&[dst_reg, src_reg]);
-    cpu.registers[dst_reg] = cpu.registers[src_reg] & 0xFF;
+    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFF; }
 }
 pub fn move_reg_reg_short(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    cpu.validate_registers(&[dst_reg, src_reg]);
-    cpu.registers[dst_reg] = cpu.registers[src_reg] & 0xFFFF;
+    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFFFF; }
 }
 pub fn move_reg_reg_long(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    cpu.validate_registers(&[dst_reg, src_reg]);
-    cpu.registers[dst_reg] = cpu.registers[src_reg];
+    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = *cpu.registers.get_unchecked(src_reg); }
 }
 
 pub fn move_mem_reg_byte(cpu: &mut Cpu) {
@@ -396,10 +387,10 @@ pub fn move_indirect_indirect_long(cpu: &mut Cpu) {
 }
 
 pub fn add_byte_imm(cpu: &mut Cpu) {
-    let lhs = (cpu.registers[0] & 0xFF) as u8;
+    let lhs = (unsafe { cpu.registers.get_unchecked(0) } & 0xFF) as u8;
     let rhs = cpu.next_byte();
     let (result, carry) = lhs.overflowing_add(rhs);
-    cpu.registers[0] = result as u32;
+    unsafe { *cpu.registers.get_unchecked_mut(0) = result as u32; }
     cpu.set_flag(Cpu::CARRY_FLAG, carry);
 }
 pub fn add_short_imm(cpu: &mut Cpu) {
@@ -1242,11 +1233,13 @@ pub fn jump_not_equal(cpu: &mut Cpu) {
 }
 pub fn jump_greater(cpu: &mut Cpu) {
     let addr = cpu.next_long();
-    let lhs = cpu.registers[0];
-    let rhs = cpu.registers[1];
-    if lhs > rhs  {
-        cpu.registers[IP] = addr;
-    }
+    unsafe { 
+        let lhs = cpu.registers.get_unchecked(0); 
+        let rhs = cpu.registers.get_unchecked(1); 
+        if lhs > rhs  {
+            *cpu.registers.get_unchecked_mut(IP) = addr;
+        }
+    };
 }
 pub fn jump_greater_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
@@ -1336,21 +1329,13 @@ pub fn interrupt(cpu: &mut Cpu) {
 
     // push return address
     let return_address = cpu.ip();
+    
     cpu.dec_sp(4);
     cpu.memory.set_long(cpu.sp(), return_address as u32);
 
-    // Debugging: Print the return address and stack pointer
-    println!(
-        "Interrupt: Pushed return address {:08x} to stack pointer {:08x}",
-        return_address,
-        cpu.sp()
-    );
-
     // set the interrupt flag
-    cpu.registers[FLAGS] |= Cpu::INTERRUPT_FLAG as u32;
-
-    // jump to the interrupt service routine
-    cpu.registers[IP] = cpu.memory.long(isr_addr as usize);
+    unsafe { *cpu.registers.get_unchecked_mut(FLAGS) |= Cpu::INTERRUPT_FLAG as u32; }
+    unsafe { *cpu.registers.get_unchecked_mut(IP) = cpu.memory.long(isr_addr as usize); }
 }
 pub fn interrupt_return(cpu: &mut Cpu) {
     // clear the interrupt flag

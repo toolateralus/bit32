@@ -48,6 +48,5 @@ pub fn print_string(cpu: &mut Cpu) {
 
 pub fn print_register(cpu: &mut Cpu) {
     let reg = cpu.registers[0] as usize;
-    cpu.validate_register(reg);
     println!("{}", cpu.registers[reg]);
 }

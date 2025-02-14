@@ -3,7 +3,7 @@ use crossterm::{
     event::{self, KeyModifiers},
     execute, queue,
     style::{self, Print},
-    terminal::{self},
+    terminal::{self, LeaveAlternateScreen},
 };
 use std::{
     io::{stdout, Write}, time::Duration
@@ -93,7 +93,7 @@ impl Debugger {
 
         execute!(stdout, cursor::Show).unwrap();
         terminal::disable_raw_mode().unwrap();
-        println!("\n\x1b[;032]RESULT::\n\n\t{:?}", cpu);
+        execute!(stdout, LeaveAlternateScreen).unwrap();
     }
 
     pub fn display_registers(&self, cpu: &Cpu) {
