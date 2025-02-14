@@ -1,4 +1,5 @@
 use crate::functions::{self, log_opcode};
+use crate::handlers::*;
 use crate::opcodes::Opcode;
 use core::fmt;
 use std::fmt::Debug;
@@ -6,6 +7,9 @@ use std::io::Read;
 use std::ops::{Neg, Not, Shl, Shr};
 use std::path::Path;
 use std::str::Utf8Error;
+
+
+pub type OpcodeHandler = fn(&mut Cpu);
 
 pub const NUM_REGISTERS: usize = 22;
 
@@ -82,8 +86,144 @@ pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
     pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
+    pub opcode_handlers: [OpcodeHandler; Opcode::Nop as usize],
 }
 
+pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize] {
+    let handlers = [
+        hlt,
+        
+        move_imm_reg_byte,
+        move_imm_reg_short,
+        move_imm_reg_long,
+
+        move_reg_reg_byte,
+        move_reg_reg_short,
+        move_reg_reg_long,
+
+        move_mem_reg_byte,
+        move_mem_reg_short,
+        move_mem_reg_long,
+
+        move_abs_reg_byte,
+        move_abs_reg_short,
+        move_abs_reg_long,
+
+        move_indirect_reg_byte,
+        move_indirect_reg_short,
+        move_indirect_reg_long,
+
+        move_imm_abs_byte,
+        move_imm_abs_short,
+        move_imm_abs_long,
+
+        move_reg_abs_byte,
+        move_reg_abs_short,
+        move_reg_abs_long,
+
+        move_abs_abs_byte,
+        move_abs_abs_short,
+        move_abs_abs_long,
+        
+        move_mem_abs_byte,
+        move_mem_abs_short,
+        move_mem_abs_long,
+
+        move_indirect_abs_byte,
+        move_indirect_abs_short,
+        move_indirect_abs_long,
+
+        move_imm_mem_byte,
+        move_imm_mem_short,
+        move_imm_mem_long,
+
+        move_reg_mem_byte,
+        move_reg_mem_short,
+        move_reg_mem_long,
+
+        move_mem_mem_byte,
+        move_mem_mem_short,
+        move_mem_mem_long,
+
+        move_abs_mem_byte,
+        move_abs_mem_short,
+        move_abs_mem_long,
+
+        move_indirect_mem_byte,
+        move_indirect_mem_short,
+        move_indirect_mem_long,
+
+        move_imm_indirect_byte,
+        move_imm_indirect_short,
+        move_imm_indirect_long,
+        
+        move_reg_indirect_byte,
+        move_reg_indirect_short,
+        move_reg_indirect_long,
+        
+        move_abs_indirect_byte,
+        move_abs_indirect_short,
+        move_abs_indirect_long,
+        
+        move_mem_indirect_byte,
+        move_mem_indirect_short,
+        move_mem_indirect_long,
+
+        move_indirect_indirect_byte,
+        move_indirect_indirect_short,
+        move_indirect_indirect_long,
+
+        add_byte_imm,
+        add_short_imm,
+        add_long_imm,
+
+        add_byte_reg,
+        add_short_reg,
+        add_long_reg,
+
+        add_carry_byte_imm,
+        add_carry_short_imm,
+        add_carry_long_imm,
+
+        add_carry_byte_reg,
+        add_carry_short_reg,
+        add_carry_long_reg,
+
+        sub_byte_imm,
+        sub_short_imm,
+        sub_long_imm,
+
+        sub_byte_reg,
+        sub_short_reg,
+        sub_long_reg,
+
+        sub_borrow_byte_imm,
+        sub_borrow_short_imm,
+        sub_borrow_long_imm,
+
+        sub_borrow_byte_reg,
+        sub_borrow_short_reg,
+        sub_borrow_long_reg,
+        
+        mul_byte_imm,
+        mul_short_imm,
+        mul_long_imm,
+
+        mul_byte_reg,
+        mul_short_reg,
+        mul_long_reg,
+
+        div_byte_imm,
+        div_short_imm,
+        div_long_imm,
+
+        div_byte_reg,
+        div_short_reg,
+        div_long_reg,
+    ];
+
+    todo!();
+}
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registers = format!(
@@ -119,1056 +259,6 @@ impl Debug for Cpu {
     }
 }
 
-// General, register helpers.
-impl Cpu {
-    pub const VGA_BUFFER_LEN: usize = 320 * 200 * 2; // Each character has 2 bytes (char + color)
-    pub const VGA_BUFFER_ADDRESS: usize = 0xA0000;
-
-    pub const HALT_FLAG: u32 = 1 << 0;
-    pub const INTERRUPT_FLAG: u32 = 1 << 1;
-    pub const CARRY_FLAG: u32 = 1 << 2;
-
-    pub fn new() -> Self {
-        let mut cpu = Cpu {
-            registers: [0; NUM_REGISTERS],
-            memory: Memory::new(),
-            hardware_interrupt_routine: None,
-        };
-
-        // TODO: remove this after testing.
-        // just a default stack so we don't have to set it up constantly.
-        let bp = cpu.memory.buffer.len() - 20;
-        cpu.registers[BP] = bp as u32;
-
-        let sp = bp - 1000;
-        cpu.registers[SP] = sp as u32;
-
-        for i in (Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN).step_by(2)
-        {
-            cpu.memory.buffer[i] = b' ';
-            cpu.memory.buffer[i + 1] = 0x0;
-        }
-
-        return cpu;
-    }
-
-    pub fn run(&mut self) {
-        while !self.has_flag(Cpu::HALT_FLAG) {
-            self.cycle();
-        }
-    }
-    pub fn flags(&self) -> u32 {
-        self.registers[FLAGS] as u32
-    }
-    pub fn has_flag(&self, flag: u32) -> bool {
-        (self.flags() & flag) == flag
-    }
-    pub fn set_flag(&mut self, flag: u32, set: bool) {
-        self.registers[FLAGS] = (self.registers[FLAGS] & !flag) | (-(set as i32) as u32 & flag);
-    }
-    pub fn sp(&self) -> usize {
-        self.registers[SP] as usize
-    }
-    pub fn ip(&self) -> usize {
-        self.registers[IP] as usize
-    }
-    pub fn bp(&self) -> usize {
-        self.registers[BP] as usize
-    }
-    fn dec_sp(&mut self, value: u32) {
-        if let Some(result) = self.registers[SP].checked_sub(value) {
-            self.registers[SP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("stack underflow.");
-        }
-    }
-    fn inc_sp(&mut self, value: u32) {
-        if let Some(result) = self.registers[SP].checked_add(value) {
-            self.registers[SP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("stack overflow.");
-        }
-    }
-    fn inc_ip(&mut self, value: u32) {
-        if let Some(result) = self.registers[IP].checked_add(value) {
-            self.registers[IP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("instruction pointer overflow.");
-        }
-    }
-}
-
-// Comparisons
-impl Cpu {
-    fn cmp(&mut self, opcode: &Opcode) {
-        match opcode {
-            Opcode::CompareByteImm => {
-                let lhs = self.registers[0];
-                let rhs = self.next_byte();
-                self.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
-            }
-            Opcode::CompareShortImm => {
-                let lhs = self.registers[0];
-                let rhs = self.next_short();
-                self.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
-            }
-            Opcode::CompareLongImm => {
-                let lhs = self.registers[0];
-                let rhs = self.next_long();
-                self.registers[0] = if lhs == rhs { 1 } else { 0 };
-            }
-            Opcode::CompareByteReg => {
-                let lhs = self.registers[0];
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as u8;
-                self.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
-            }
-            Opcode::CompareShortReg => {
-                let lhs = self.registers[0];
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as u16;
-                self.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
-            }
-            Opcode::CompareLongReg => {
-                let lhs = self.registers[0];
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                self.registers[0] = if lhs == rhs { 1 } else { 0 };
-            }
-            _ => panic!("invalid compare"),
-        }
-    }
-    pub fn and(&mut self, op: &Opcode) {
-        match op {
-            Opcode::AndByteImm => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
-                let rhs = self.next_byte();
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndShortImm => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
-                let rhs = self.next_short();
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndLongImm => {
-                let lhs = self.registers[0];
-                let rhs = self.next_long();
-                self.registers[0] = lhs & rhs;
-            }
-            Opcode::AndByteReg => {
-                let lhs = (self.registers[0] & 0xFF) as u8;
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndShortReg => {
-                let lhs = (self.registers[0] & 0xFFFF) as u16;
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                self.registers[0] = (lhs & rhs) as u32;
-            }
-            Opcode::AndLongReg => {
-                let lhs = self.registers[0];
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                self.registers[0] = lhs & rhs;
-            }
-            _ => {
-                panic!("invalid and instruction");
-            }
-        }
-    }
-}
-
-// Jumps
-impl Cpu {
-    fn jump_cmp(&mut self, op: &Opcode) {
-        let lhs = self.registers[0];
-        let rhs = self.registers[1];
-        let addr = self.next_long();
-        if match op {
-            Opcode::JumpEqual => lhs == rhs,
-            Opcode::JumpNotEqual => lhs != rhs,
-            Opcode::JumpGreater => lhs > rhs,
-            Opcode::JumpGreaterEqual => lhs >= rhs,
-            Opcode::JumpLess => lhs < rhs,
-            Opcode::JumpLessEqual => lhs <= rhs,
-            Opcode::JumpSignedGreater => (lhs as i32) > rhs as i32,
-            Opcode::JumpSignedGreaterEqual => (lhs as i32) >= rhs as i32,
-            Opcode::JumpSignedLess => (lhs as i32) < rhs as i32,
-            Opcode::JumpSignedLessEqual => (lhs as i32) <= rhs as i32,
-            _ => panic!("invalid jump instruction"),
-        } {
-            self.registers[IP] = addr;
-        }
-    }
-    fn jmp_imm(&mut self) {
-        let addr = self.next_long();
-        self.registers[IP] = addr;
-    }
-    fn jmp_reg(&mut self) {
-        let index = self.next_byte() as usize;
-        let addr = self.registers[index];
-        self.registers[IP] = addr;
-    }
-}
-
-// Stack
-impl Cpu {
-    fn push(&mut self, op: &Opcode) {
-        match op {
-            Opcode::PushByteReg => {
-                self.dec_sp(1);
-                let index = self.next_byte() as usize;
-                let value = (self.registers[index] & 0xFF) as u8;
-                self.memory.set_byte(self.sp(), value);
-            }
-            Opcode::PushByteImm => {
-                self.dec_sp(1);
-                let value = self.next_byte();
-                self.memory.set_byte(self.sp(), value);
-            }
-            Opcode::PushShortImm => {
-                self.dec_sp(2);
-                let value = self.next_short();
-                self.memory.set_short(self.sp(), value);
-            }
-            Opcode::PushShortReg => {
-                self.dec_sp(2);
-                let index = self.next_byte() as usize;
-                let value = (self.registers[index] & 0xFFFF) as u16;
-                self.memory.set_short(self.sp(), value);
-            }
-            Opcode::PushLongReg => {
-                self.dec_sp(4);
-                let index = self.next_byte() as usize;
-                let value = self.registers[index];
-                self.memory.set_long(self.sp(), value);
-            }
-            Opcode::PushLongImm => {
-                self.dec_sp(4);
-                let value = self.next_long();
-                self.memory.set_long(self.sp(), value);
-            }
-            _ => {
-                panic!("invalid push");
-            }
-        }
-    }
-
-    fn pop(&mut self, op: &Opcode) {
-        match op {
-            Opcode::PopByte => {
-                let dest = self.next_byte() as usize;
-                let value = self.memory.byte(self.sp());
-                self.registers[dest] = value as u32;
-                self.inc_sp(1);
-            }
-            Opcode::PopShort => {
-                let dest = self.next_byte() as usize;
-                let value = self.memory.short(self.sp());
-                self.registers[dest] = value as u32;
-                self.inc_sp(2);
-            }
-            Opcode::PopLong => {
-                let dest = self.next_byte() as usize;
-                let value = self.memory.long(self.sp());
-                self.registers[dest] = value as u32;
-                self.inc_sp(4);
-            }
-            _ => {
-                panic!("invalid pop");
-            }
-        }
-    }
-}
-
-// Registers
-impl Cpu {
-    // TODO: probably remove these, it's a dang cpu emulator why would we have bounds checking.
-    pub fn validate_register(&self, reg: usize) {
-        if reg >= self.registers.len() {
-            panic!("Invalid register {reg}");
-        }
-    }
-    pub fn validate_registers(&self, regs: &[usize]) {
-        for r in regs {
-            self.validate_register(*r);
-        }
-    }
-}
-
-// Arithmetic
-impl Cpu {
-    pub fn arith_long(&mut self, opcode: &Opcode) {
-        let lhs = self.registers[0];
-        match opcode {
-            Opcode::AddLongImm => {
-                let rhs = self.next_long();
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::AddLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubLongImm => {
-                let rhs = self.next_long();
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::DivLongImm => {
-                let rhs = self.next_long();
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient;
-                self.registers[1] = remainder;
-            }
-            Opcode::DivLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient;
-                self.registers[1] = remainder;
-            }
-            Opcode::MulLongImm => {
-                let rhs = self.next_long();
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = result;
-            }
-            Opcode::MulLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = result;
-            }
-
-            Opcode::AddCarryLongImm => {
-                let rhs = self.next_long();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u32;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::AddCarryLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u32;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowLongImm => {
-                let rhs = self.next_long();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u32;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index];
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u32;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SignedDivLongImm => {
-                let rhs = self.next_long() as i32;
-                let quotient = lhs as i32 / rhs;
-                let remainder = lhs as i32 % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as i32;
-                let quotient = lhs as i32 / rhs;
-                let remainder = lhs as i32 % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulLongImm => {
-                let rhs = self.next_long() as i32;
-                let result = (lhs as i32).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            Opcode::SignedMulLongReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as i32;
-                let result = (lhs as i32).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid long arith instruction");
-            }
-        }
-    }
-    pub fn arith_short(&mut self, opcode: &Opcode) {
-        let lhs = (self.registers[0] & 0xFFFF) as u16;
-        match opcode {
-            Opcode::AddShortImm => {
-                let rhs = self.next_short();
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::AddShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubShortImm => {
-                let rhs = self.next_short();
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::DivShortImm => {
-                let rhs = self.next_short();
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::DivShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::MulShortImm => {
-                let rhs = self.next_short();
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = (result & 0xFFFF) as u32;
-            }
-            Opcode::MulShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = (result & 0xFFFF) as u32;
-            }
-
-            Opcode::AddCarryShortImm => {
-                let rhs = self.next_short();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u16;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::AddCarryShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u16;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowShortImm => {
-                let rhs = self.next_short();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u16;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as u16;
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u16;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SignedDivShortImm => {
-                let rhs = self.next_short() as i16;
-                let quotient = (lhs as i16) / rhs;
-                let remainder = (lhs as i16) % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as i16;
-                let quotient = (lhs as i16) / rhs;
-                let remainder = (lhs as i16) % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulShortImm => {
-                let rhs = self.next_short() as i16;
-                let result = (lhs as i16).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            Opcode::SignedMulShortReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFFFF) as i16;
-                let result = (lhs as i16).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid short arith instruction");
-            }
-        }
-    }
-    pub fn arith_byte(&mut self, opcode: &Opcode) {
-        let lhs = (self.registers[0] & 0xFF) as u8;
-        match opcode {
-            Opcode::AddByteImm => {
-                let rhs = self.next_byte();
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::AddByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let (result, carry) = lhs.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubByteImm => {
-                let rhs = self.next_byte();
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::SubByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let (result, carry) = lhs.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry);
-            }
-            Opcode::DivByteImm => {
-                let rhs = self.next_byte();
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::DivByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let quotient = lhs / rhs;
-                let remainder = lhs % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::MulByteImm => {
-                let rhs = self.next_byte();
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = (result & 0xFF) as u32;
-            }
-            Opcode::MulByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let result = lhs.wrapping_mul(rhs);
-                self.registers[0] = (result & 0xFF) as u32;
-            }
-
-            Opcode::AddCarryByteImm => {
-                let rhs = self.next_byte();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u8;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::AddCarryByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u8;
-                let (result, carry0) = lhs.overflowing_add(carry);
-                let (result, carry1) = result.overflowing_add(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowByteImm => {
-                let rhs = self.next_byte();
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u8;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SubBorrowByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = (self.registers[index] & 0xFF) as u8;
-                let carry = self.has_flag(Cpu::CARRY_FLAG) as u8;
-                let (result, carry0) = lhs.overflowing_sub(carry);
-                let (result, carry1) = result.overflowing_sub(rhs);
-                self.registers[0] = result as u32;
-                self.set_flag(Cpu::CARRY_FLAG, carry0 | carry1);
-            }
-            Opcode::SignedDivByteImm => {
-                let rhs = self.next_byte() as i8;
-                let quotient = (lhs as i8) / rhs;
-                let remainder = (lhs as i8) % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedDivByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as i8;
-                let quotient = (lhs as i8) / rhs;
-                let remainder = (lhs as i8) % rhs;
-                self.registers[0] = quotient as u32;
-                self.registers[1] = remainder as u32;
-            }
-            Opcode::SignedMulByteImm => {
-                let rhs = self.next_byte() as i8;
-                let result = (lhs as i8).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            Opcode::SignedMulByteReg => {
-                let index = self.next_byte() as usize;
-                let rhs = self.registers[index] as i8;
-                let result = (lhs as i8).wrapping_mul(rhs);
-                self.registers[0] = result as u32;
-            }
-            _ => {
-                panic!("invalid byte arith instruction");
-            }
-        }
-    }
-}
-
-// Move
-impl Cpu {
-    pub fn mov_to_reg(&mut self, opcode: &Opcode) {
-        let dst_reg = self.next_byte() as usize;
-        match opcode {
-            //from immediate
-            Opcode::MoveImmRegByte => {
-                let src_val = self.next_byte();
-                self.validate_register(dst_reg);
-                self.registers[dst_reg] = src_val as u32;
-            }
-            Opcode::MoveImmRegShort => {
-                let src_val = self.next_short();
-                self.validate_register(dst_reg);
-                self.registers[dst_reg] = src_val as u32;
-            }
-            Opcode::MoveImmRegLong => {
-                let src_val = self.next_long();
-                self.validate_register(dst_reg);
-                self.registers[dst_reg] = src_val;
-            }
-
-            // from register
-            Opcode::MoveRegRegByte => {
-                let src_reg = self.next_byte() as usize;
-                self.validate_registers(&[dst_reg, src_reg]);
-                self.registers[dst_reg] = self.registers[src_reg] & 0xFF;
-            }
-            Opcode::MoveRegRegShort => {
-                let src_reg = self.next_byte() as usize;
-                self.validate_registers(&[dst_reg, src_reg]);
-                self.registers[dst_reg] = self.registers[src_reg] & 0xFFFF;
-            }
-            Opcode::MoveRegRegLong => {
-                let src_reg = self.next_byte() as usize;
-                self.validate_registers(&[dst_reg, src_reg]);
-                self.registers[dst_reg] = self.registers[src_reg];
-            }
-
-            // from relative memory
-            Opcode::MoveMemRegByte => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.byte(src_adr + self.ip()) as u32;
-                self.registers[dst_reg] = src_val;
-            }
-            Opcode::MoveMemRegShort => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.short(src_adr + self.ip()) as u32;
-                self.registers[dst_reg] = src_val;
-            }
-            Opcode::MoveMemRegLong => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.long(src_adr + self.ip());
-                self.registers[dst_reg] = src_val;
-            }
-
-            // from absolute memory
-            Opcode::MoveAbsRegByte => {
-                let src_adr = self.next_long() as usize;
-                self.registers[dst_reg] = self.memory.byte(src_adr) as u32;
-            }
-            Opcode::MoveAbsRegShort => {
-                let src_adr = self.next_long() as usize;
-                self.registers[dst_reg] = self.memory.short(src_adr) as u32;
-            }
-            Opcode::MoveAbsRegLong => {
-                let src_adr = self.next_long() as usize;
-                self.registers[dst_reg] = self.memory.long(src_adr);
-            }
-
-            // from indirect memory
-            Opcode::MoveIndirectRegByte => {
-                let src_reg = self.next_byte() as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                self.registers[dst_reg] = self.memory.byte(src_adr) as u32;
-            }
-            Opcode::MoveIndirectRegShort => {
-                let src_reg = self.next_byte() as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                self.registers[dst_reg] = self.memory.short(src_adr) as u32;
-            }
-            Opcode::MoveIndirectRegLong => {
-                let src_reg = self.next_byte() as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                self.registers[dst_reg] = self.memory.long(src_adr);
-            }
-
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_rel(&mut self, opcode: &Opcode) {
-        let dst_adr = self.next_long() as usize;
-        match opcode {
-            // from immediate
-            Opcode::MoveImmMemByte => {
-                let src_val = self.next_byte();
-                self.memory.set_byte(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveImmMemShort => {
-                let src_val = self.next_short();
-                self.memory.set_short(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveImmMemLong => {
-                let src_val = self.next_long();
-                self.memory.set_long(dst_adr + self.ip(), src_val);
-            }
-
-            // from register
-            Opcode::MoveRegMemByte => {
-                let src_reg = self.next_byte() as usize;
-                self.memory
-                    .set_byte(dst_adr + self.ip(), self.registers[src_reg] as u8);
-            }
-            Opcode::MoveRegMemShort => {
-                let src_reg = self.next_byte() as usize;
-                self.memory
-                    .set_short(dst_adr + self.ip(), self.registers[src_reg] as u16);
-            }
-            Opcode::MoveRegMemLong => {
-                let src_reg = self.next_byte() as usize;
-                self.memory
-                    .set_long(dst_adr + self.ip(), self.registers[src_reg]);
-            }
-
-            // from relative memory
-            Opcode::MoveMemMemByte => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.byte(src_adr + self.ip());
-                self.memory.set_byte(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveMemMemShort => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.short(src_adr + self.ip());
-                self.memory.set_short(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveMemMemLong => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.long(src_adr + self.ip());
-                self.memory.set_long(dst_adr + self.ip(), src_val);
-            }
-
-            // from absolute memory
-            Opcode::MoveAbsMemByte => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.byte(src_adr);
-                self.memory.set_byte(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveAbsMemShort => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.short(src_adr);
-                self.memory.set_short(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveAbsMemLong => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.long(src_adr);
-                self.memory.set_long(dst_adr + self.ip(), src_val);
-            }
-
-            // from Indirect memory
-            Opcode::MoveIndirectMemByte => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.byte(self.registers[src_reg] as usize);
-                self.memory.set_byte(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveIndirectMemShort => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.short(self.registers[src_reg] as usize);
-                self.memory.set_short(dst_adr + self.ip(), src_val);
-            }
-            Opcode::MoveIndirectMemLong => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.long(self.registers[src_reg] as usize);
-                self.memory.set_long(dst_adr + self.ip(), src_val);
-            }
-
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_abs(&mut self, opcode: &Opcode) {
-        let dst_adr = self.next_long() as usize;
-        match opcode {
-            // from immediate
-            Opcode::MoveImmAbsByte => {
-                let src_val = self.next_byte();
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveImmAbsShort => {
-                let src_val = self.next_short();
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveImmAbsLong => {
-                let src_val = self.next_long();
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from register
-            Opcode::MoveRegAbsByte => {
-                let src_reg = self.next_byte() as usize;
-                self.memory.set_byte(dst_adr, self.registers[src_reg] as u8);
-            }
-            Opcode::MoveRegAbsShort => {
-                let src_reg = self.next_byte() as usize;
-                self.memory
-                    .set_short(dst_adr, self.registers[src_reg] as u16);
-            }
-            Opcode::MoveRegAbsLong => {
-                let src_reg = self.next_byte() as usize;
-                self.memory.set_long(dst_adr, self.registers[src_reg]);
-            }
-
-            // from relative memory
-            Opcode::MoveMemAbsByte => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.byte(src_adr + self.ip());
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveMemAbsShort => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.short(src_adr + self.ip());
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveMemAbsLong => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.long(src_adr + self.ip());
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from absolute memory
-            Opcode::MoveAbsAbsByte => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.byte(src_adr);
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveAbsAbsShort => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.short(src_adr);
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveAbsAbsLong => {
-                let src_adr = self.next_long() as usize;
-                let src_val = self.memory.long(src_adr);
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from Indirect memory
-            Opcode::MoveIndirectAbsByte => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.byte(self.registers[src_reg] as usize);
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveIndirectAbsShort => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.short(self.registers[src_reg] as usize);
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveIndirectAbsLong => {
-                let src_reg = self.next_byte() as usize;
-                let src_val = self.memory.long(self.registers[src_reg] as usize);
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-    pub fn mov_to_ind(&mut self, opcode: &Opcode) {
-        let dst_reg = self.next_byte() as usize;
-        match opcode {
-            // from immediate
-            Opcode::MoveImmIndirectByte => {
-                let src_val = self.next_byte();
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveImmIndirectShort => {
-                let src_val = self.next_short();
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveImmIndirectLong => {
-                let src_val = self.next_long();
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from register
-            Opcode::MoveRegIndirectByte => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_byte(dst_adr, self.registers[src_reg] as u8);
-            }
-            Opcode::MoveRegIndirectShort => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory
-                    .set_short(dst_adr, self.registers[src_reg] as u16);
-            }
-            Opcode::MoveRegIndirectLong => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                self.memory.set_long(dst_adr, self.registers[src_reg]);
-            }
-
-            // from relative memory
-            Opcode::MoveMemIndirectByte => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.byte(src_adr + self.ip());
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveMemIndirectShort => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.short(src_adr + self.ip());
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveMemIndirectLong => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.long(src_adr + self.ip());
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from absolute memory
-            Opcode::MoveAbsIndirectByte => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.byte(src_adr);
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveAbsIndirectShort => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.short(src_adr);
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveAbsIndirectLong => {
-                let src_adr = self.next_long() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_val = self.memory.long(src_adr);
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            // from indirect memory
-            Opcode::MoveIndirectIndirectByte => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                let src_val = self.memory.byte(src_adr);
-                self.memory.set_byte(dst_adr, src_val);
-            }
-            Opcode::MoveIndirectIndirectShort => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                let src_val = self.memory.short(src_adr);
-                self.memory.set_short(dst_adr, src_val);
-            }
-            Opcode::MoveIndirectIndirectLong => {
-                let src_reg = self.next_byte() as usize;
-                let dst_adr = self.registers[dst_reg] as usize;
-                let src_adr = self.registers[src_reg] as usize;
-                let src_val = self.memory.long(src_adr);
-                self.memory.set_long(dst_adr, src_val);
-            }
-
-            _ => {
-                panic!("Invalid move opcode");
-            }
-        }
-    }
-}
-
-// Memory utils
-impl Cpu {
-    pub fn next_byte(&mut self) -> u8 {
-        let b = self.memory.byte(self.ip());
-        self.inc_ip(1);
-        return b;
-    }
-    pub fn next_short(&mut self) -> u16 {
-        let low = self.next_byte() as u16;
-        let high = self.next_byte() as u16;
-        return (high << 8) | low;
-    }
-    pub fn next_long(&mut self) -> u32 {
-        let low = self.next_short() as u32;
-        let high = self.next_short() as u32;
-        return (high << 16) | low;
-    }
-    pub fn next_utf8(&mut self) -> String {
-        let string = self.memory.utf8(self.ip()).unwrap();
-        self.inc_ip(string.len() as u32);
-        return string;
-    }
-}
 
 // General, Cycle, Load Program
 impl Cpu {
@@ -1336,23 +426,6 @@ impl Cpu {
                 self.cmp(&opcode);
             }
 
-            Opcode::MoveImmRegByte
-            | Opcode::MoveImmRegShort
-            | Opcode::MoveImmRegLong
-            | Opcode::MoveRegRegByte
-            | Opcode::MoveRegRegShort
-            | Opcode::MoveRegRegLong
-            | Opcode::MoveMemRegByte
-            | Opcode::MoveMemRegShort
-            | Opcode::MoveMemRegLong
-            | Opcode::MoveAbsRegByte
-            | Opcode::MoveAbsRegShort
-            | Opcode::MoveAbsRegLong
-            | Opcode::MoveIndirectRegByte
-            | Opcode::MoveIndirectRegShort
-            | Opcode::MoveIndirectRegLong => {
-                self.mov_to_reg(&opcode);
-            }
             Opcode::MoveImmMemByte
             | Opcode::MoveImmMemShort
             | Opcode::MoveImmMemLong
@@ -1800,6 +873,495 @@ impl Cpu {
             }
             Opcode::ClearCarry => {
                 self.set_flag(Cpu::CARRY_FLAG, false);
+            }
+        }
+    }
+}
+
+// Memory utils
+impl Cpu {
+    pub fn next_byte(&mut self) -> u8 {
+        let b = self.memory.byte(self.ip());
+        self.inc_ip(1);
+        return b;
+    }
+    pub fn next_short(&mut self) -> u16 {
+        let low = self.next_byte() as u16;
+        let high = self.next_byte() as u16;
+        return (high << 8) | low;
+    }
+    pub fn next_long(&mut self) -> u32 {
+        let low = self.next_short() as u32;
+        let high = self.next_short() as u32;
+        return (high << 16) | low;
+    }
+    pub fn next_utf8(&mut self) -> String {
+        let string = self.memory.utf8(self.ip()).unwrap();
+        self.inc_ip(string.len() as u32);
+        return string;
+    }
+}
+
+// General, register helpers.
+impl Cpu {
+    pub const VGA_BUFFER_LEN: usize = 320 * 200 * 2; // Each character has 2 bytes (char + color)
+    pub const VGA_BUFFER_ADDRESS: usize = 0xA0000;
+
+    pub const HALT_FLAG: u32 = 1 << 0;
+    pub const INTERRUPT_FLAG: u32 = 1 << 1;
+    pub const CARRY_FLAG: u32 = 1 << 2;
+
+    pub fn new() -> Self {
+        let mut cpu = Cpu {
+            registers: [0; NUM_REGISTERS],
+            memory: Memory::new(),
+            hardware_interrupt_routine: None,
+            opcode_handlers: get_opcode_handlers(),
+        };
+
+        // TODO: remove this after testing.
+        // just a default stack so we don't have to set it up constantly.
+        let bp = cpu.memory.buffer.len() - 20;
+        cpu.registers[BP] = bp as u32;
+
+        let sp = bp - 1000;
+        cpu.registers[SP] = sp as u32;
+
+        for i in (Cpu::VGA_BUFFER_ADDRESS..Cpu::VGA_BUFFER_ADDRESS + Cpu::VGA_BUFFER_LEN).step_by(2)
+        {
+            cpu.memory.buffer[i] = b' ';
+            cpu.memory.buffer[i + 1] = 0x0;
+        }
+
+        return cpu;
+    }
+
+    pub fn run(&mut self) {
+        while !self.has_flag(Cpu::HALT_FLAG) {
+            self.cycle();
+        }
+    }
+    #[inline(always)]
+    pub fn flags(&self) -> u32 {
+        self.registers[FLAGS] as u32
+    }
+    #[inline(always)]
+    pub fn has_flag(&self, flag: u32) -> bool {
+        (self.flags() & flag) == flag
+    }
+    #[inline(always)]
+    pub fn set_flag(&mut self, flag: u32, set: bool) {
+        self.registers[FLAGS] = (self.registers[FLAGS] & !flag) | (-(set as i32) as u32 & flag);
+    }
+    #[inline(always)]
+    pub fn sp(&self) -> usize {
+        self.registers[SP] as usize
+    }
+    #[inline(always)]
+    pub fn ip(&self) -> usize {
+        self.registers[IP] as usize
+    }
+    #[inline(always)]
+    pub fn bp(&self) -> usize {
+        self.registers[BP] as usize
+    }
+    #[inline(always)]
+    fn dec_sp(&mut self, value: u32) {
+        if let Some(result) = self.registers[SP].checked_sub(value) {
+            self.registers[SP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("stack underflow.");
+        }
+    }
+    #[inline(always)]
+    fn inc_sp(&mut self, value: u32) {
+        if let Some(result) = self.registers[SP].checked_add(value) {
+            self.registers[SP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("stack overflow.");
+        }
+    }
+    #[inline(always)]
+    fn inc_ip(&mut self, value: u32) {
+        if let Some(result) = self.registers[IP].checked_add(value) {
+            self.registers[IP] = result;
+        } else {
+            println!("{:?}", self);
+            panic!("instruction pointer overflow.");
+        }
+    }
+}
+// Registers
+impl Cpu {
+    // TODO: probably remove these, it's a dang cpu emulator why would we have bounds checking.
+    pub fn validate_register(&self, reg: usize) {
+        if reg >= self.registers.len() {
+            panic!("Invalid register {reg}");
+        }
+    }
+    pub fn validate_registers(&self, regs: &[usize]) {
+        for r in regs {
+            self.validate_register(*r);
+        }
+    }
+}
+
+
+
+
+// Comparisons
+impl Cpu {
+    fn cmp(&mut cpu, opcode: &Opcode) {
+        match opcode {
+            Opcode::CompareByteImm => {
+                let lhs = cpu.registers[0];
+                let rhs = cpu.next_byte();
+                cpu.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
+            }
+            Opcode::CompareShortImm => {
+                let lhs = cpu.registers[0];
+                let rhs = cpu.next_short();
+                cpu.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
+            }
+            Opcode::CompareLongImm => {
+                let lhs = cpu.registers[0];
+                let rhs = cpu.next_long();
+                cpu.registers[0] = if lhs == rhs { 1 } else { 0 };
+            }
+            Opcode::CompareByteReg => {
+                let lhs = cpu.registers[0];
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as u8;
+                cpu.registers[0] = if lhs as u8 == rhs { 1 } else { 0 };
+            }
+            Opcode::CompareShortReg => {
+                let lhs = cpu.registers[0];
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as u16;
+                cpu.registers[0] = if lhs as u16 == rhs { 1 } else { 0 };
+            }
+            Opcode::CompareLongReg => {
+                let lhs = cpu.registers[0];
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index];
+                cpu.registers[0] = if lhs == rhs { 1 } else { 0 };
+            }
+            _ => panic!("invalid compare"),
+        }
+    }
+    pub fn and(&mut cpu, op: &Opcode) {
+        match op {
+            Opcode::AndByteImm => {
+                let lhs = (cpu.registers[0] & 0xFF) as u8;
+                let rhs = cpu.next_byte();
+                cpu.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortImm => {
+                let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+                let rhs = cpu.next_short();
+                cpu.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndLongImm => {
+                let lhs = cpu.registers[0];
+                let rhs = cpu.next_long();
+                cpu.registers[0] = lhs & rhs;
+            }
+            Opcode::AndByteReg => {
+                let lhs = (cpu.registers[0] & 0xFF) as u8;
+                let index = cpu.next_byte() as usize;
+                let rhs = (cpu.registers[index] & 0xFF) as u8;
+                cpu.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndShortReg => {
+                let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+                let index = cpu.next_byte() as usize;
+                let rhs = (cpu.registers[index] & 0xFFFF) as u16;
+                cpu.registers[0] = (lhs & rhs) as u32;
+            }
+            Opcode::AndLongReg => {
+                let lhs = cpu.registers[0];
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index];
+                cpu.registers[0] = lhs & rhs;
+            }
+            _ => {
+                panic!("invalid and instruction");
+            }
+        }
+    }
+}
+
+// Jumps
+impl Cpu {
+    fn jump_cmp(&mut cpu, op: &Opcode) {
+        let lhs = cpu.registers[0];
+        let rhs = cpu.registers[1];
+        let addr = cpu.next_long();
+        if match op {
+            Opcode::JumpEqual => lhs == rhs,
+            Opcode::JumpNotEqual => lhs != rhs,
+            Opcode::JumpGreater => lhs > rhs,
+            Opcode::JumpGreaterEqual => lhs >= rhs,
+            Opcode::JumpLess => lhs < rhs,
+            Opcode::JumpLessEqual => lhs <= rhs,
+            Opcode::JumpSignedGreater => (lhs as i32) > rhs as i32,
+            Opcode::JumpSignedGreaterEqual => (lhs as i32) >= rhs as i32,
+            Opcode::JumpSignedLess => (lhs as i32) < rhs as i32,
+            Opcode::JumpSignedLessEqual => (lhs as i32) <= rhs as i32,
+            _ => panic!("invalid jump instruction"),
+        } {
+            cpu.registers[IP] = addr;
+        }
+    }
+    fn jmp_imm(&mut cpu) {
+        let addr = cpu.next_long();
+        cpu.registers[IP] = addr;
+    }
+    fn jmp_reg(&mut cpu) {
+        let index = cpu.next_byte() as usize;
+        let addr = cpu.registers[index];
+        cpu.registers[IP] = addr;
+    }
+}
+
+// Stack
+impl Cpu {
+    fn push(&mut cpu, op: &Opcode) {
+        match op {
+            Opcode::PushByteReg => {
+                cpu.dec_sp(1);
+                let index = cpu.next_byte() as usize;
+                let value = (cpu.registers[index] & 0xFF) as u8;
+                cpu.memory.set_byte(cpu.sp(), value);
+            }
+            Opcode::PushByteImm => {
+                cpu.dec_sp(1);
+                let value = cpu.next_byte();
+                cpu.memory.set_byte(cpu.sp(), value);
+            }
+            Opcode::PushShortImm => {
+                cpu.dec_sp(2);
+                let value = cpu.next_short();
+                cpu.memory.set_short(cpu.sp(), value);
+            }
+            Opcode::PushShortReg => {
+                cpu.dec_sp(2);
+                let index = cpu.next_byte() as usize;
+                let value = (cpu.registers[index] & 0xFFFF) as u16;
+                cpu.memory.set_short(cpu.sp(), value);
+            }
+            Opcode::PushLongReg => {
+                cpu.dec_sp(4);
+                let index = cpu.next_byte() as usize;
+                let value = cpu.registers[index];
+                cpu.memory.set_long(cpu.sp(), value);
+            }
+            Opcode::PushLongImm => {
+                cpu.dec_sp(4);
+                let value = cpu.next_long();
+                cpu.memory.set_long(cpu.sp(), value);
+            }
+            _ => {
+                panic!("invalid push");
+            }
+        }
+    }
+
+    fn pop(&mut cpu, op: &Opcode) {
+        match op {
+            Opcode::PopByte => {
+                let dest = cpu.next_byte() as usize;
+                let value = cpu.memory.byte(cpu.sp());
+                cpu.registers[dest] = value as u32;
+                cpu.inc_sp(1);
+            }
+            Opcode::PopShort => {
+                let dest = cpu.next_byte() as usize;
+                let value = cpu.memory.short(cpu.sp());
+                cpu.registers[dest] = value as u32;
+                cpu.inc_sp(2);
+            }
+            Opcode::PopLong => {
+                let dest = cpu.next_byte() as usize;
+                let value = cpu.memory.long(cpu.sp());
+                cpu.registers[dest] = value as u32;
+                cpu.inc_sp(4);
+            }
+            _ => {
+                panic!("invalid pop");
+            }
+        }
+    }
+}
+
+
+// Arithmetic
+impl Cpu {
+    pub fn arith_long(&mut cpu, opcode: &Opcode) {
+        let lhs = cpu.registers[0];
+        match opcode {
+            Opcode::DivLongReg => {
+              
+            }
+
+            Opcode::SignedDivLongImm => {
+                let rhs = cpu.next_long() as i32;
+                let quotient = lhs as i32 / rhs;
+                let remainder = lhs as i32 % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedDivLongReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as i32;
+                let quotient = lhs as i32 / rhs;
+                let remainder = lhs as i32 % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedMulLongImm => {
+                let rhs = cpu.next_long() as i32;
+                let result = (lhs as i32).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            Opcode::SignedMulLongReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as i32;
+                let result = (lhs as i32).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            _ => {
+                panic!("invalid long arith instruction");
+            }
+        }
+    }
+    pub fn arith_short(&mut cpu, opcode: &Opcode) {
+        let lhs = (cpu.registers[0] & 0xFFFF) as u16;
+        match opcode {
+            Opcode::SignedDivShortImm => {
+                let rhs = cpu.next_short() as i16;
+                let quotient = (lhs as i16) / rhs;
+                let remainder = (lhs as i16) % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedDivShortReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = (cpu.registers[index] & 0xFFFF) as i16;
+                let quotient = (lhs as i16) / rhs;
+                let remainder = (lhs as i16) % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedMulShortImm => {
+                let rhs = cpu.next_short() as i16;
+                let result = (lhs as i16).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            Opcode::SignedMulShortReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = (cpu.registers[index] & 0xFFFF) as i16;
+                let result = (lhs as i16).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            _ => {
+                panic!("invalid short arith instruction");
+            }
+        }
+    }
+    pub fn arith_byte(&mut cpu, opcode: &Opcode) {
+        let lhs = (cpu.registers[0] & 0xFF) as u8;
+        match opcode {
+
+            Opcode::SignedDivByteImm => {
+                let rhs = cpu.next_byte() as i8;
+                let quotient = (lhs as i8) / rhs;
+                let remainder = (lhs as i8) % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedDivByteReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as i8;
+                let quotient = (lhs as i8) / rhs;
+                let remainder = (lhs as i8) % rhs;
+                cpu.registers[0] = quotient as u32;
+                cpu.registers[1] = remainder as u32;
+            }
+            Opcode::SignedMulByteImm => {
+                let rhs = cpu.next_byte() as i8;
+                let result = (lhs as i8).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            Opcode::SignedMulByteReg => {
+                let index = cpu.next_byte() as usize;
+                let rhs = cpu.registers[index] as i8;
+                let result = (lhs as i8).wrapping_mul(rhs);
+                cpu.registers[0] = result as u32;
+            }
+            _ => {
+                panic!("invalid byte arith instruction");
+            }
+        }
+    }
+}
+
+// Move
+impl Cpu {
+    pub fn mov_to_reg(&mut cpu, opcode: &Opcode) {
+        let dst_reg = cpu.next_byte() as usize;
+        match opcode {
+            // from absolute memory
+            Opcode::MoveAbsRegByte => {
+              
+            }
+            Opcode::MoveAbsRegShort => {
+
+            }
+            Opcode::MoveAbsRegLong => {
+
+            }
+
+            // from indirect memory
+            Opcode::MoveIndirectRegByte => {
+
+            }
+            Opcode::MoveIndirectRegShort => {
+
+            }
+            Opcode::MoveIndirectRegLong => {
+
+            }
+
+            _ => {
+                panic!("Invalid move opcode");
+            }
+        }
+    }
+    pub fn mov_to_rel(&mut cpu, opcode: &Opcode) {
+        let dst_adr = cpu.next_long() as usize;
+        match opcode {
+            _ => {
+                panic!("Invalid move opcode");
+            }
+        }
+    }
+    pub fn mov_to_abs(&mut cpu, opcode: &Opcode) {
+        let dst_adr = cpu.next_long() as usize;
+        match opcode {
+            _ => {
+                panic!("Invalid move opcode");
+            }
+        }
+    }
+    pub fn mov_to_ind(&mut cpu, opcode: &Opcode) {
+        let dst_reg = cpu.next_byte() as usize;
+        match opcode {
+            // from immediate
+            _ => {
+                panic!("Invalid move opcode");
             }
         }
     }

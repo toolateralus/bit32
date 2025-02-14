@@ -23,6 +23,8 @@ pub enum Opcode {
     MoveIndirectRegByte,
     MoveIndirectRegShort,
     MoveIndirectRegLong,
+
+    // * DONE
     
     // move to absolute memory
     MoveImmAbsByte,
@@ -313,6 +315,7 @@ pub enum Opcode {
     Syscall,
     ClearCarry,
     
+    // * This must ALWAYS! be the last opcode.
     Nop,
 }
 

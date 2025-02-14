@@ -1,6 +1,6 @@
 use cpu::Cpu;
 use hardware::Hardware;
-use std::env::{self, current_dir};
+use std::env::{self};
 use std::io::stdout;
 use std::time::Instant;
 
@@ -8,6 +8,7 @@ use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute};
 use debug::Debugger;
 
+pub mod handlers;
 pub mod cpu;
 pub mod debug;
 pub mod functions;
