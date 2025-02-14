@@ -232,10 +232,141 @@ pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize] {
         signed_div_byte_imm,
         signed_div_short_imm,
         signed_div_long_imm,
-        
+
         signed_div_byte_reg,
         signed_div_short_reg,
         signed_div_long_reg,
+
+        and_byte_imm,
+        and_short_imm,
+        and_long_imm,
+
+        and_byte_reg,
+        and_short_reg,
+        and_long_reg,
+
+        or_byte_imm,
+        or_short_imm,
+        or_long_imm,
+
+        or_byte_reg,
+        or_short_reg,
+        or_long_reg,
+
+        xor_byte_imm,
+        xor_short_imm,
+        xor_long_imm,
+
+        xor_byte_reg,
+        xor_short_reg,
+        xor_long_reg,
+
+        push_byte_imm,
+        push_short_imm,
+        push_long_imm,
+
+        push_byte_reg,
+        push_short_reg,
+        push_long_reg,
+
+        compare_byte_imm,
+        compare_short_imm,
+        compare_long_imm,
+
+        compare_byte_reg,
+        compare_short_reg,
+        compare_long_reg,
+
+        log_shift_left_byte_imm,
+        log_shift_left_short_imm,
+        log_shift_left_long_imm,
+
+        log_shift_left_byte_reg,
+        log_shift_left_short_reg,
+        log_shift_left_long_reg,
+
+        log_shift_right_byte_imm,
+        log_shift_right_short_imm,
+        log_shift_right_long_imm,
+
+        log_shift_right_byte_reg,
+        log_shift_right_short_reg,
+        log_shift_right_long_reg,
+
+        arith_shift_left_byte_imm,
+        arith_shift_left_short_imm,
+        arith_shift_left_long_imm,
+
+        arith_shift_left_byte_reg,
+        arith_shift_left_short_reg,
+        arith_shift_left_long_reg,
+
+        arith_shift_right_byte_imm,
+        arith_shift_right_short_imm,
+        arith_shift_right_long_imm,
+
+        arith_shift_right_byte_reg,
+        arith_shift_right_short_reg,
+        arith_shift_right_long_reg,
+
+        rotate_left_byte_imm,
+        rotate_left_short_imm,
+        rotate_left_long_imm,
+
+        rotate_left_byte_reg,
+        rotate_left_short_reg,
+        rotate_left_long_reg,
+
+        rotate_right_byte_imm,
+        rotate_right_short_imm,
+        rotate_right_long_imm,
+
+        rotate_right_byte_reg,
+        rotate_right_short_reg,
+        rotate_right_long_reg,
+
+        pop_byte,
+        pop_short,
+        pop_long,
+
+        negate_byte,
+        negate_short,
+        negate_long,
+
+        not_byte,
+        not_short,
+        not_long,
+
+        increment_byte,
+        increment_short,
+        increment_long,
+
+        decrement_byte,
+        decrement_short,
+        decrement_long,
+
+        jump_equal,
+        jump_not_equal,
+        jump_greater,
+        jump_greater_equal,
+        jump_less,
+        jump_less_equal,
+        jump_signed_greater,
+        jump_signed_greaterequal,
+        jump_signed_less,
+        jump_signed_lessequal,
+        jump_imm,
+        jump_reg,
+
+        interrupt,
+        interrupt_return,
+
+        call,
+        ret,
+        syscall,
+    
+        clearcarry,
+        nop,
     ];
 
     todo!();

@@ -786,3 +786,122 @@ pub fn signed_div_long_reg(cpu: &mut Cpu) {
     cpu.registers[0] = quotient as u32;
     cpu.registers[1] = remainder as u32;
 }
+
+pub fn and_byte_imm(cpu: &mut Cpu) {}
+pub fn and_short_imm(cpu: &mut Cpu) {}
+pub fn and_long_imm(cpu: &mut Cpu) {}
+pub fn and_byte_reg(cpu: &mut Cpu) {}
+pub fn and_short_reg(cpu: &mut Cpu) {}
+pub fn and_long_reg(cpu: &mut Cpu) {}
+
+pub fn or_byte_imm(cpu: &mut Cpu) {}
+pub fn or_short_imm(cpu: &mut Cpu) {}
+pub fn or_long_imm(cpu: &mut Cpu) {}
+pub fn or_byte_reg(cpu: &mut Cpu) {}
+pub fn or_short_reg(cpu: &mut Cpu) {}
+pub fn or_long_reg(cpu: &mut Cpu) {}
+
+pub fn xor_byte_imm(cpu: &mut Cpu) {}
+pub fn xor_short_imm(cpu: &mut Cpu) {}
+pub fn xor_long_imm(cpu: &mut Cpu) {}
+pub fn xor_byte_reg(cpu: &mut Cpu) {}
+pub fn xor_short_reg(cpu: &mut Cpu) {}
+pub fn xor_long_reg(cpu: &mut Cpu) {}
+
+pub fn push_byte_imm(cpu: &mut Cpu) {}
+pub fn push_short_imm(cpu: &mut Cpu) {}
+pub fn push_long_imm(cpu: &mut Cpu) {}
+pub fn push_byte_reg(cpu: &mut Cpu) {}
+pub fn push_short_reg(cpu: &mut Cpu) {}
+pub fn push_long_reg(cpu: &mut Cpu) {}
+
+pub fn compare_byte_imm(cpu: &mut Cpu) {}
+pub fn compare_short_imm(cpu: &mut Cpu) {}
+pub fn compare_long_imm(cpu: &mut Cpu) {}
+pub fn compare_byte_reg(cpu: &mut Cpu) {}
+pub fn compare_short_reg(cpu: &mut Cpu) {}
+pub fn compare_long_reg(cpu: &mut Cpu) {}
+
+pub fn log_shift_left_byte_imm(cpu: &mut Cpu) {}
+pub fn log_shift_left_short_imm(cpu: &mut Cpu) {}
+pub fn log_shift_left_long_imm(cpu: &mut Cpu) {}
+pub fn log_shift_left_byte_reg(cpu: &mut Cpu) {}
+pub fn log_shift_left_short_reg(cpu: &mut Cpu) {}
+pub fn log_shift_left_long_reg(cpu: &mut Cpu) {}
+
+pub fn log_shift_right_byte_imm(cpu: &mut Cpu) {}
+pub fn log_shift_right_short_imm(cpu: &mut Cpu) {}
+pub fn log_shift_right_long_imm(cpu: &mut Cpu) {}
+pub fn log_shift_right_byte_reg(cpu: &mut Cpu) {}
+pub fn log_shift_right_short_reg(cpu: &mut Cpu) {}
+pub fn log_shift_right_long_reg(cpu: &mut Cpu) {}
+
+pub fn arith_shift_left_byte_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_left_short_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_left_long_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_left_byte_reg(cpu: &mut Cpu) {}
+pub fn arith_shift_left_short_reg(cpu: &mut Cpu) {}
+pub fn arith_shift_left_long_reg(cpu: &mut Cpu) {}
+
+pub fn arith_shift_right_byte_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_right_short_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_right_long_imm(cpu: &mut Cpu) {}
+pub fn arith_shift_right_byte_reg(cpu: &mut Cpu) {}
+pub fn arith_shift_right_short_reg(cpu: &mut Cpu) {}
+pub fn arith_shift_right_long_reg(cpu: &mut Cpu) {}
+
+pub fn rotate_left_byte_imm(cpu: &mut Cpu) {}
+pub fn rotate_left_short_imm(cpu: &mut Cpu) {}
+pub fn rotate_left_long_imm(cpu: &mut Cpu) {}
+pub fn rotate_left_byte_reg(cpu: &mut Cpu) {}
+pub fn rotate_left_short_reg(cpu: &mut Cpu) {}
+pub fn rotate_left_long_reg(cpu: &mut Cpu) {}
+
+pub fn rotate_right_byte_imm(cpu: &mut Cpu) {}
+pub fn rotate_right_short_imm(cpu: &mut Cpu) {}
+pub fn rotate_right_long_imm(cpu: &mut Cpu) {}
+pub fn rotate_right_byte_reg(cpu: &mut Cpu) {}
+pub fn rotate_right_short_reg(cpu: &mut Cpu) {}
+pub fn rotate_right_long_reg(cpu: &mut Cpu) {}
+
+pub fn pop_byte(cpu: &mut Cpu) {}
+pub fn pop_short(cpu: &mut Cpu) {}
+pub fn pop_long(cpu: &mut Cpu) {}
+
+pub fn negate_byte(cpu: &mut Cpu) {}
+pub fn negate_short(cpu: &mut Cpu) {}
+pub fn negate_long(cpu: &mut Cpu) {}
+
+pub fn not_byte(cpu: &mut Cpu) {}
+pub fn not_short(cpu: &mut Cpu) {}
+pub fn not_long(cpu: &mut Cpu) {}
+
+pub fn increment_byte(cpu: &mut Cpu) {}
+pub fn increment_short(cpu: &mut Cpu) {}
+pub fn increment_long(cpu: &mut Cpu) {}
+
+pub fn decrement_byte(cpu: &mut Cpu) {}
+pub fn decrement_short(cpu: &mut Cpu) {}
+pub fn decrement_long(cpu: &mut Cpu) {}
+
+pub fn jump_equal(cpu: &mut Cpu) {}
+pub fn jump_not_equal(cpu: &mut Cpu) {}
+pub fn jump_greater(cpu: &mut Cpu) {}
+pub fn jump_greater_equal(cpu: &mut Cpu) {}
+pub fn jump_less(cpu: &mut Cpu) {}
+pub fn jump_less_equal(cpu: &mut Cpu) {}
+pub fn jump_signed_greater(cpu: &mut Cpu) {}
+pub fn jump_signed_greaterequal(cpu: &mut Cpu) {}
+pub fn jump_signed_less(cpu: &mut Cpu) {}
+pub fn jump_signed_lessequal(cpu: &mut Cpu) {}
+pub fn jump_imm(cpu: &mut Cpu) {}
+pub fn jump_reg(cpu: &mut Cpu) {}
+
+pub fn interrupt(cpu: &mut Cpu) {}
+pub fn interrupt_return(cpu: &mut Cpu) {}
+
+pub fn call(cpu: &mut Cpu) {}
+pub fn ret(cpu: &mut Cpu) {}
+pub fn syscall(cpu: &mut Cpu) {}
+pub fn clearcarry(cpu: &mut Cpu) {}
+pub fn nop(cpu: &mut Cpu) {}
