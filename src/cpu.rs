@@ -86,11 +86,11 @@ pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
     pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
-    pub opcode_handlers: [OpcodeHandler; Opcode::Nop as usize],
+    pub opcode_handlers: [OpcodeHandler; Opcode::Nop as usize + 1],
 }
 
-pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize] {
-    let handlers = [
+pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize + 1] {
+    [
         hlt,
         
         move_imm_reg_byte,
@@ -367,9 +367,7 @@ pub fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize] {
     
         clear_carry,
         nop,
-    ];
-
-    todo!();
+    ]
 }
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
