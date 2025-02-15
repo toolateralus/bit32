@@ -530,7 +530,7 @@ impl Cpu {
 
 // General, register helpers.
 impl Cpu {
-    pub const VGA_BUFFER_LEN: usize = 320 * 200 * 2; // Each character has 2 bytes (char + color)
+    pub const VGA_BUFFER_LEN: usize = 80 * 25 * 2; // Each character has 2 bytes (char + color)
     pub const VGA_BUFFER_ADDRESS: usize = 0xA0000;
 
     pub const HALT_FLAG: u32 = 1 << 0;

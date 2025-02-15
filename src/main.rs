@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::env::{self};
 use std::io::stdout;
 use std::rc::Rc;
-use std::sync::Arc;
 use std::time::Instant;
 
 use crossterm::terminal::LeaveAlternateScreen;

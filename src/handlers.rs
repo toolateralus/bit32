@@ -14,35 +14,47 @@ pub fn hlt(cpu: &mut Cpu) {
 pub fn move_imm_reg_byte(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_val = cpu.next_byte();
-    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32; }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32;
+    }
 }
 pub fn move_imm_reg_short(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_val = cpu.next_short();
-    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32; }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = src_val as u32;
+    }
 }
 pub fn move_imm_reg_long(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
-    let src_val = cpu.next_long();    
-    unsafe {* cpu.registers.get_unchecked_mut(dst_reg) = src_val; }
+    let src_val = cpu.next_long();
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = src_val;
+    }
 }
 
 pub fn move_reg_reg_byte(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFF; }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFF;
+    }
 }
 
 pub fn move_reg_reg_short(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFFFF; }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = cpu.registers.get_unchecked(src_reg) & 0xFFFF;
+    }
 }
 
 pub fn move_reg_reg_long(cpu: &mut Cpu) {
     let dst_reg = cpu.next_byte() as usize;
     let src_reg = cpu.next_byte() as usize;
-    unsafe { *cpu.registers.get_unchecked_mut(dst_reg) = *cpu.registers.get_unchecked(src_reg); }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dst_reg) = *cpu.registers.get_unchecked(src_reg);
+    }
 }
 
 pub fn move_mem_reg_byte(cpu: &mut Cpu) {
@@ -392,7 +404,9 @@ pub fn add_byte_imm(cpu: &mut Cpu) {
     let lhs = (unsafe { cpu.registers.get_unchecked(0) } & 0xFF) as u8;
     let rhs = cpu.next_byte();
     let (result, carry) = lhs.overflowing_add(rhs);
-    unsafe { *cpu.registers.get_unchecked_mut(0) = result as u32; }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(0) = result as u32;
+    }
     cpu.set_flag(Cpu::CARRY_FLAG, carry);
 }
 pub fn add_short_imm(cpu: &mut Cpu) {
@@ -1139,19 +1153,25 @@ pub fn rotate_right_long_reg(cpu: &mut Cpu) {
 pub fn pop_byte(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.byte(cpu.sp());
-    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dest) = value as u32;
+    };
     cpu.inc_sp(1);
 }
 pub fn pop_short(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.short(cpu.sp());
-    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dest) = value as u32;
+    };
     cpu.inc_sp(2);
 }
 pub fn pop_long(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.long(cpu.sp());
-    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
+    unsafe {
+        *cpu.registers.get_unchecked_mut(dest) = value as u32;
+    };
     cpu.inc_sp(4);
 }
 
@@ -1220,58 +1240,101 @@ pub fn decrement_long(cpu: &mut Cpu) {
 }
 
 pub fn read_byte(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("read byte from channel into register");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    unsafe {
+        let hardware_clone = cpu.hardware[port].clone();
+        let hardware = hardware_clone.borrow_mut();
+        *cpu.registers.get_unchecked_mut(reg) = hardware.read() as u32;
+    }
 }
 pub fn read_short(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("read short from channel into register");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    unsafe {
+        let hardware_clone = cpu.hardware[port].clone();
+        let hardware = hardware_clone.borrow_mut();
+        let mut val = hardware.read() as u32;
+        val += (hardware.read() as u32) << 8;
+        *cpu.registers.get_unchecked_mut(reg) = val;
+    }
 }
 pub fn read_long(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("read long from channel into register");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    unsafe {
+        let hardware_clone = cpu.hardware[port].clone();
+        let hardware = hardware_clone.borrow_mut();
+        let mut val = hardware.read() as u32;
+        val += (hardware.read() as u32) << 8;
+        val += (hardware.read() as u32) << 16;
+        val += (hardware.read() as u32) << 24;
+        *cpu.registers.get_unchecked_mut(reg) = val;
+    }
 }
 
 pub fn write_byte_imm(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _val = cpu.next_byte() as usize;
-    todo!("write byte from imm into channel");
+    let port = cpu.next_byte() as usize;
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(cpu.next_byte());
 }
 pub fn write_short_imm(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _val = cpu.next_short() as usize;
-    todo!("write short from imm into channel");
+    let port = cpu.next_byte() as usize;
+
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(cpu.next_byte());
+    hardware.write(cpu.next_byte());
 }
 pub fn write_long_imm(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _val = cpu.next_long() as usize;
-    todo!("write long from imm into channel");
+    let port = cpu.next_byte() as usize;
+
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(cpu.next_byte());
+    hardware.write(cpu.next_byte());
+    hardware.write(cpu.next_byte());
+    hardware.write(cpu.next_byte());
 }
 
 pub fn write_byte_reg(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("write byte from reg into channel");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg];
+
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(val as u8);
 }
 pub fn write_short_reg(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("write short from reg into channel");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg];
+
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(val as u8);
+    hardware.write((val >> 8) as u8);
 }
 pub fn write_long_reg(cpu: &mut Cpu) {
-    let _chan = cpu.next_byte() as usize;
-    let _reg = cpu.next_byte() as usize;
-    todo!("write long from reg into channel");
+    let port = cpu.next_byte() as usize;
+    let reg = cpu.next_byte() as usize;
+    let val = cpu.registers[reg];
+
+    let hardware_clone = cpu.hardware[port].clone();
+    let mut hardware = hardware_clone.borrow_mut();
+    hardware.write(val as u8);
+    hardware.write((val >> 8) as u8);
+    hardware.write((val >> 16) as u8);
+    hardware.write((val >> 24) as u8);
 }
 
 pub fn jump_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs == rhs  {
+    if lhs == rhs {
         cpu.registers[IP] = addr;
     }
 }
@@ -1279,16 +1342,16 @@ pub fn jump_not_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs != rhs  {
+    if lhs != rhs {
         cpu.registers[IP] = addr;
     }
 }
 pub fn jump_greater(cpu: &mut Cpu) {
     let addr = cpu.next_long();
-    unsafe { 
-        let lhs = cpu.registers.get_unchecked(0); 
-        let rhs = cpu.registers.get_unchecked(1); 
-        if lhs > rhs  {
+    unsafe {
+        let lhs = cpu.registers.get_unchecked(0);
+        let rhs = cpu.registers.get_unchecked(1);
+        if lhs > rhs {
             *cpu.registers.get_unchecked_mut(IP) = addr;
         }
     };
@@ -1297,7 +1360,7 @@ pub fn jump_greater_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs >= rhs  {
+    if lhs >= rhs {
         cpu.registers[IP] = addr;
     }
 }
@@ -1305,7 +1368,7 @@ pub fn jump_less(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs < rhs  {
+    if lhs < rhs {
         cpu.registers[IP] = addr;
     }
 }
@@ -1313,7 +1376,7 @@ pub fn jump_less_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs <= rhs  {
+    if lhs <= rhs {
         cpu.registers[IP] = addr;
     }
 }
@@ -1321,7 +1384,7 @@ pub fn jump_signed_greater(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs as i32 > rhs as i32  {
+    if lhs as i32 > rhs as i32 {
         cpu.registers[IP] = addr;
     }
 }
@@ -1329,7 +1392,7 @@ pub fn jump_signed_greater_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs as i32 >= rhs as i32  {
+    if lhs as i32 >= rhs as i32 {
         cpu.registers[IP] = addr;
     }
 }
@@ -1337,7 +1400,7 @@ pub fn jump_signed_less(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if (lhs as i32) < rhs as i32  {
+    if (lhs as i32) < rhs as i32 {
         cpu.registers[IP] = addr;
     }
 }
@@ -1345,7 +1408,7 @@ pub fn jump_signed_less_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
     let rhs = cpu.registers[1];
-    if lhs as i32 <= rhs as i32  {
+    if lhs as i32 <= rhs as i32 {
         cpu.registers[IP] = addr;
     }
 }
@@ -1381,13 +1444,17 @@ pub fn interrupt(cpu: &mut Cpu) {
 
     // push return address
     let return_address = cpu.ip();
-    
+
     cpu.dec_sp(4);
     cpu.memory.set_long(cpu.sp(), return_address as u32);
 
     // set the interrupt flag
-    unsafe { *cpu.registers.get_unchecked_mut(FLAGS) |= Cpu::INTERRUPT_FLAG as u32; }
-    unsafe { *cpu.registers.get_unchecked_mut(IP) = cpu.memory.long(isr_addr as usize); }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(FLAGS) |= Cpu::INTERRUPT_FLAG as u32;
+    }
+    unsafe {
+        *cpu.registers.get_unchecked_mut(IP) = cpu.memory.long(isr_addr as usize);
+    }
 }
 pub fn interrupt_return(cpu: &mut Cpu) {
     // clear the interrupt flag
