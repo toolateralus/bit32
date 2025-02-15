@@ -1,9 +1,12 @@
 use crate::handlers::*;
+use crate::hardware::Hardware;
 use crate::opcodes::Opcode;
 use core::fmt;
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::io::Read;
 use std::path::Path;
+use std::rc::Rc;
 use std::str::Utf8Error;
 
 
@@ -92,7 +95,7 @@ pub type HardwareInterrupt = Box<dyn Fn(&mut Cpu) + Send + Sync>;
 pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
-    pub hardware_interrupt: Option<HardwareInterrupt>,
+    pub hardware: Vec<Rc<RefCell<dyn Hardware>>>
 }
 
 pub type OpcodeHandlerArray = [OpcodeHandler; 256];
@@ -483,14 +486,6 @@ impl Cpu {
 
     #[inline(always)]
     pub fn cycle(&mut self) {
-        let flags = unsafe { self.registers.get_unchecked(FLAGS) };
-
-        if flags & Cpu::INTERRUPT_FLAG == Cpu::INTERRUPT_FLAG {
-            if let Some(hw_interrupt) = self.hardware_interrupt.take() {
-                (hw_interrupt)(self);
-                self.hardware_interrupt = None;
-            }
-        }
         let instruction = self.next_byte();
         unsafe { (Self::OPCODE_HANDLERS.get_unchecked(instruction as usize))(self) };
     }
@@ -546,7 +541,7 @@ impl Cpu {
         let mut cpu = Cpu {
             registers: [0; NUM_REGISTERS],
             memory: Memory::new(),
-            hardware_interrupt: None,
+            hardware: Vec::new(),
         };
 
         // TODO: remove this after testing.

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{cell::RefCell, rc::Rc, sync::{Arc, Mutex}};
 
 use crate::cpu::Cpu;
 
@@ -14,12 +14,12 @@ macro_rules! impl_numeric {
 impl_numeric!(u8, u16, u32);
 
 pub struct Config {
-    pub cpu: Arc<Mutex<Cpu>>,
+    pub cpu: Rc<RefCell<Cpu>>,
     pub id: u8,
 }
 
 pub trait Hardware {
     fn init(&mut self, config: Config);
-    fn read<T: Numeric>(&self) -> T;
-    fn write<T: Numeric>(&mut self, b: T);
+    fn read(&self) -> u8;
+    fn write(&mut self, b: u8);
 }

@@ -5,13 +5,13 @@ use crate::{
     hardware::{Config, Hardware, Numeric},
 };
 
-pub struct GfxContext {
+pub struct GPU {
     pub raylib: (RaylibHandle, RaylibThread),
     pub vga_buffer: [u8; Cpu::VGA_BUFFER_LEN],
     pub cfg: Option<Config>,
 }
 
-impl GfxContext {
+impl GPU {
     pub fn vga_to_raylib_color(vga_color: u8) -> Color {
         match vga_color {
             0x0 => Color::BLACK,
@@ -43,21 +43,21 @@ impl GfxContext {
     }
 }
 
-impl Hardware for GfxContext {
+impl Hardware for GPU {
     fn init(&mut self, cfg: Config) {
         self.cfg = Some(cfg);
     }
 
-    fn read<T: Numeric>(&self) -> T {
+    fn read(&self) -> u8 {
         todo!()
     }
 
-    fn write<T: Numeric>(&mut self, _b: T) {
+    fn write(&mut self, _b: u8) {
         todo!()
     }
 }
 
-impl GfxContext {
+impl GPU {
     pub fn draw(&mut self) {
         let (ref mut window, ref thread) = self.raylib;
         let mut handle = window.begin_drawing(thread);
@@ -68,8 +68,8 @@ impl GfxContext {
             if chunk.len() == 2 {
                 let ch = chunk[0] as char;
                 let color = chunk[1];
-                let fg_color = GfxContext::vga_to_raylib_color(color & 0x0F);
-                let bg_color = GfxContext::vga_to_raylib_color((color >> 4) & 0x0F);
+                let fg_color = GPU::vga_to_raylib_color(color & 0x0F);
+                let bg_color = GPU::vga_to_raylib_color((color >> 4) & 0x0F);
                 handle.draw_rectangle(x * 8, y * 16, 8, 16, bg_color);
                 handle.draw_text(&ch.to_string(), x * 8, y * 16, 16, fg_color);
                 x += 1;
