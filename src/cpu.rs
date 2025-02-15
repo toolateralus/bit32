@@ -94,84 +94,144 @@ pub const fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize + 1] 
     [
         hlt,
         
+        // MoveImmRegByte
         move_imm_reg_byte,
+        // MoveImmRegShort
         move_imm_reg_short,
+        // MoveImmRegLong
         move_imm_reg_long,
 
+        // MoveRegRegByte
         move_reg_reg_byte,
+        // MoveRegRegShort
         move_reg_reg_short,
+        // MoveRegRegLong
         move_reg_reg_long,
 
-        move_mem_reg_byte,
-        move_mem_reg_short,
-        move_mem_reg_long,
-
+        // MoveAbsRegByte
         move_abs_reg_byte,
+        // MoveAbsRegShort
         move_abs_reg_short,
+        // MoveAbsRegLong
         move_abs_reg_long,
 
+        // MoveMemRegByte
+        move_mem_reg_byte,
+        // MoveMemRegShort
+        move_mem_reg_short,
+        // MoveMemRegLong
+        move_mem_reg_long,
+
+        // MoveIndirectRegByte
         move_indirect_reg_byte,
+        // MoveIndirectRegShort
         move_indirect_reg_short,
+        // MoveIndirectRegLong
         move_indirect_reg_long,
 
+        // MoveImmAbsByte
         move_imm_abs_byte,
+        // MoveImmAbsShort
         move_imm_abs_short,
+        // MoveImmAbsLong
         move_imm_abs_long,
 
+        // MoveRegAbsByte
         move_reg_abs_byte,
+        // MoveRegAbsShort
         move_reg_abs_short,
+        // MoveRegAbsLong
         move_reg_abs_long,
 
+        // MoveAbsAbsByte
         move_abs_abs_byte,
+        // MoveAbsAbsShort
         move_abs_abs_short,
+        // MoveAbsAbsLong
         move_abs_abs_long,
         
+        // MoveMemAbsByte
         move_mem_abs_byte,
+        // MoveMemAbsShort
         move_mem_abs_short,
+        // MoveMemAbsLong
         move_mem_abs_long,
 
+        // MoveIndirectAbsByte
         move_indirect_abs_byte,
+        // MoveIndirectAbsShort
         move_indirect_abs_short,
+        // MoveIndirectAbsLong
         move_indirect_abs_long,
 
+        // MoveImmMemByte
         move_imm_mem_byte,
+        // MoveImmMemShort
         move_imm_mem_short,
+        // MoveImmMemLong
         move_imm_mem_long,
 
+        // MoveRegMemByte
         move_reg_mem_byte,
+        // MoveRegMemShort
         move_reg_mem_short,
+        // MoveRegMemLong
         move_reg_mem_long,
 
-        move_mem_mem_byte,
-        move_mem_mem_short,
-        move_mem_mem_long,
-
+        // MoveAbsMemByte
         move_abs_mem_byte,
+        // MoveAbsMemShort
         move_abs_mem_short,
+        // MoveAbsMemLong
         move_abs_mem_long,
-
+        
+        // MoveMemMemByte
+        move_mem_mem_byte,
+        // MoveMemMemShort
+        move_mem_mem_short,
+        // MoveMemMemLong
+        move_mem_mem_long,
+        
+        // MoveIndirectMemByte
         move_indirect_mem_byte,
+        // MoveIndirectMemShort
         move_indirect_mem_short,
+        // MoveIndirectMemLong
         move_indirect_mem_long,
 
+        // MoveImmIndirectByte
         move_imm_indirect_byte,
+        // MoveImmIndirectShort
         move_imm_indirect_short,
+        // MoveImmIndirectLong
         move_imm_indirect_long,
         
+        // MoveRegIndirectByte
         move_reg_indirect_byte,
+        // MoveRegIndirectShort
         move_reg_indirect_short,
+        // MoveRegIndirectLong
         move_reg_indirect_long,
         
+        // MoveAbsIndirectByte
         move_abs_indirect_byte,
+        // MoveAbsIndirectShort
         move_abs_indirect_short,
+        // MoveAbsIndirectLong
         move_abs_indirect_long,
         
+        // MoveMemIndirectByte
         move_mem_indirect_byte,
+        // MoveMemIndirectShort
         move_mem_indirect_short,
+        // MoveMemIndirectLong
         move_mem_indirect_long,
 
+        // MoveIndirectIndirectByte
         move_indirect_indirect_byte,
+        // MoveIndirectIndirectShort
         move_indirect_indirect_short,
+        // MoveIndirectIndirectLong
         move_indirect_indirect_long,
 
         add_byte_imm,
