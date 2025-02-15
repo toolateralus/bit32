@@ -7,7 +7,7 @@ use raylib::{color::Color, init, prelude::RaylibDraw};
 
 use crate::{
     cpu::Cpu,
-    hardware::{Config, Hardware},
+    hardware::{Config, Hardware, Numeric},
 };
 
 pub struct GfxContext {
@@ -88,11 +88,11 @@ impl Hardware for GfxContext {
         this.lock().unwrap().join_handle = join_handle;
     }
 
-    fn read<T: crate::hardware::Numeric>(&self) -> T {
+    fn read<T: Numeric>(&self) -> T {
         todo!()
     }
 
-    fn write<T: crate::hardware::Numeric>(&mut self, b: T) {
+    fn write<T: Numeric>(&mut self, b: T) {
         todo!()
     }
 }
