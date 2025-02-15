@@ -378,6 +378,7 @@ pub const fn get_opcode_handlers() -> OpcodeHandlerArray {
 
     handlers
 }
+
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registers = format!(
