@@ -305,11 +305,8 @@ pub enum Opcode {
     JumpImm,
     JumpReg,
     
-    // TODO: implement idt & io ports.
     Interrupt,
     InterruptReturn,
-    // OutByte,
-    // InByte,
     Call,
     Return,
     Syscall,

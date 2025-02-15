@@ -93,345 +93,290 @@ pub struct Cpu {
     pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
 }
 
-pub const fn get_opcode_handlers() -> [OpcodeHandler; Opcode::Nop as usize + 1] {
-    [
-        hlt,
-        
-        // MoveImmRegByte
-        move_imm_reg_byte,
-        // MoveImmRegShort
-        move_imm_reg_short,
-        // MoveImmRegLong
-        move_imm_reg_long,
+pub type OpcodeHandlerArray = [OpcodeHandler; 256];
 
-        // MoveRegRegByte
-        move_reg_reg_byte,
-        // MoveRegRegShort
-        move_reg_reg_short,
-        // MoveRegRegLong
-        move_reg_reg_long,
+pub const fn get_opcode_handlers() -> OpcodeHandlerArray {
+    let mut handlers: OpcodeHandlerArray = [hlt; 256];
 
-        // MoveAbsRegByte
-        move_abs_reg_byte,
-        // MoveAbsRegShort
-        move_abs_reg_short,
-        // MoveAbsRegLong
-        move_abs_reg_long,
+    handlers[Opcode::Hlt as usize] = hlt;
+    handlers[Opcode::MoveImmRegByte as usize] = move_imm_reg_byte;
+    handlers[Opcode::MoveImmRegShort as usize] = move_imm_reg_short;
+    handlers[Opcode::MoveImmRegLong as usize] = move_imm_reg_long;
 
-        // MoveMemRegByte
-        move_mem_reg_byte,
-        // MoveMemRegShort
-        move_mem_reg_short,
-        // MoveMemRegLong
-        move_mem_reg_long,
+    handlers[Opcode::MoveRegRegByte as usize] = move_reg_reg_byte;
+    handlers[Opcode::MoveRegRegShort as usize] = move_reg_reg_short;
+    handlers[Opcode::MoveRegRegLong as usize] = move_reg_reg_long;
 
-        // MoveIndirectRegByte
-        move_indirect_reg_byte,
-        // MoveIndirectRegShort
-        move_indirect_reg_short,
-        // MoveIndirectRegLong
-        move_indirect_reg_long,
+    handlers[Opcode::MoveAbsRegByte as usize] = move_abs_reg_byte;
+    handlers[Opcode::MoveAbsRegShort as usize] = move_abs_reg_short;
+    handlers[Opcode::MoveAbsRegLong as usize] = move_abs_reg_long;
 
-        // MoveImmAbsByte
-        move_imm_abs_byte,
-        // MoveImmAbsShort
-        move_imm_abs_short,
-        // MoveImmAbsLong
-        move_imm_abs_long,
+    handlers[Opcode::MoveMemRegByte as usize] = move_mem_reg_byte;
+    handlers[Opcode::MoveMemRegShort as usize] = move_mem_reg_short;
+    handlers[Opcode::MoveMemRegLong as usize] = move_mem_reg_long;
 
-        // MoveRegAbsByte
-        move_reg_abs_byte,
-        // MoveRegAbsShort
-        move_reg_abs_short,
-        // MoveRegAbsLong
-        move_reg_abs_long,
+    handlers[Opcode::MoveIndirectRegByte as usize] = move_indirect_reg_byte;
+    handlers[Opcode::MoveIndirectRegShort as usize] = move_indirect_reg_short;
+    handlers[Opcode::MoveIndirectRegLong as usize] = move_indirect_reg_long;
 
-        // MoveAbsAbsByte
-        move_abs_abs_byte,
-        // MoveAbsAbsShort
-        move_abs_abs_short,
-        // MoveAbsAbsLong
-        move_abs_abs_long,
-        
-        // MoveMemAbsByte
-        move_mem_abs_byte,
-        // MoveMemAbsShort
-        move_mem_abs_short,
-        // MoveMemAbsLong
-        move_mem_abs_long,
+    handlers[Opcode::MoveImmAbsByte as usize] = move_imm_abs_byte;
+    handlers[Opcode::MoveImmAbsShort as usize] = move_imm_abs_short;
+    handlers[Opcode::MoveImmAbsLong as usize] = move_imm_abs_long;
 
-        // MoveIndirectAbsByte
-        move_indirect_abs_byte,
-        // MoveIndirectAbsShort
-        move_indirect_abs_short,
-        // MoveIndirectAbsLong
-        move_indirect_abs_long,
+    handlers[Opcode::MoveRegAbsByte as usize] = move_reg_abs_byte;
+    handlers[Opcode::MoveRegAbsShort as usize] = move_reg_abs_short;
+    handlers[Opcode::MoveRegAbsLong as usize] = move_reg_abs_long;
 
-        // MoveImmMemByte
-        move_imm_mem_byte,
-        // MoveImmMemShort
-        move_imm_mem_short,
-        // MoveImmMemLong
-        move_imm_mem_long,
+    handlers[Opcode::MoveAbsAbsByte as usize] = move_abs_abs_byte;
+    handlers[Opcode::MoveAbsAbsShort as usize] = move_abs_abs_short;
+    handlers[Opcode::MoveAbsAbsLong as usize] = move_abs_abs_long;
 
-        // MoveRegMemByte
-        move_reg_mem_byte,
-        // MoveRegMemShort
-        move_reg_mem_short,
-        // MoveRegMemLong
-        move_reg_mem_long,
+    handlers[Opcode::MoveMemAbsByte as usize] = move_mem_abs_byte;
+    handlers[Opcode::MoveMemAbsShort as usize] = move_mem_abs_short;
+    handlers[Opcode::MoveMemAbsLong as usize] = move_mem_abs_long;
 
-        // MoveAbsMemByte
-        move_abs_mem_byte,
-        // MoveAbsMemShort
-        move_abs_mem_short,
-        // MoveAbsMemLong
-        move_abs_mem_long,
-        
-        // MoveMemMemByte
-        move_mem_mem_byte,
-        // MoveMemMemShort
-        move_mem_mem_short,
-        // MoveMemMemLong
-        move_mem_mem_long,
-        
-        // MoveIndirectMemByte
-        move_indirect_mem_byte,
-        // MoveIndirectMemShort
-        move_indirect_mem_short,
-        // MoveIndirectMemLong
-        move_indirect_mem_long,
+    handlers[Opcode::MoveIndirectAbsByte as usize] = move_indirect_abs_byte;
+    handlers[Opcode::MoveIndirectAbsShort as usize] = move_indirect_abs_short;
+    handlers[Opcode::MoveIndirectAbsLong as usize] = move_indirect_abs_long;
 
-        // MoveImmIndirectByte
-        move_imm_indirect_byte,
-        // MoveImmIndirectShort
-        move_imm_indirect_short,
-        // MoveImmIndirectLong
-        move_imm_indirect_long,
-        
-        // MoveRegIndirectByte
-        move_reg_indirect_byte,
-        // MoveRegIndirectShort
-        move_reg_indirect_short,
-        // MoveRegIndirectLong
-        move_reg_indirect_long,
-        
-        // MoveAbsIndirectByte
-        move_abs_indirect_byte,
-        // MoveAbsIndirectShort
-        move_abs_indirect_short,
-        // MoveAbsIndirectLong
-        move_abs_indirect_long,
-        
-        // MoveMemIndirectByte
-        move_mem_indirect_byte,
-        // MoveMemIndirectShort
-        move_mem_indirect_short,
-        // MoveMemIndirectLong
-        move_mem_indirect_long,
+    handlers[Opcode::MoveImmMemByte as usize] = move_imm_mem_byte;
+    handlers[Opcode::MoveImmMemShort as usize] = move_imm_mem_short;
+    handlers[Opcode::MoveImmMemLong as usize] = move_imm_mem_long;
 
-        // MoveIndirectIndirectByte
-        move_indirect_indirect_byte,
-        // MoveIndirectIndirectShort
-        move_indirect_indirect_short,
-        // MoveIndirectIndirectLong
-        move_indirect_indirect_long,
+    handlers[Opcode::MoveRegMemByte as usize] = move_reg_mem_byte;
+    handlers[Opcode::MoveRegMemShort as usize] = move_reg_mem_short;
+    handlers[Opcode::MoveRegMemLong as usize] = move_reg_mem_long;
 
-        add_byte_imm,
-        add_short_imm,
-        add_long_imm,
+    handlers[Opcode::MoveAbsMemByte as usize] = move_abs_mem_byte;
+    handlers[Opcode::MoveAbsMemShort as usize] = move_abs_mem_short;
+    handlers[Opcode::MoveAbsMemLong as usize] = move_abs_mem_long;
 
-        add_byte_reg,
-        add_short_reg,
-        add_long_reg,
+    handlers[Opcode::MoveMemMemByte as usize] = move_mem_mem_byte;
+    handlers[Opcode::MoveMemMemShort as usize] = move_mem_mem_short;
+    handlers[Opcode::MoveMemMemLong as usize] = move_mem_mem_long;
 
-        add_carry_byte_imm,
-        add_carry_short_imm,
-        add_carry_long_imm,
+    handlers[Opcode::MoveIndirectMemByte as usize] = move_indirect_mem_byte;
+    handlers[Opcode::MoveIndirectMemShort as usize] = move_indirect_mem_short;
+    handlers[Opcode::MoveIndirectMemLong as usize] = move_indirect_mem_long;
 
-        add_carry_byte_reg,
-        add_carry_short_reg,
-        add_carry_long_reg,
+    handlers[Opcode::MoveImmIndirectByte as usize] = move_imm_indirect_byte;
+    handlers[Opcode::MoveImmIndirectShort as usize] = move_imm_indirect_short;
+    handlers[Opcode::MoveImmIndirectLong as usize] = move_imm_indirect_long;
 
-        sub_byte_imm,
-        sub_short_imm,
-        sub_long_imm,
+    handlers[Opcode::MoveRegIndirectByte as usize] = move_reg_indirect_byte;
+    handlers[Opcode::MoveRegIndirectShort as usize] = move_reg_indirect_short;
+    handlers[Opcode::MoveRegIndirectLong as usize] = move_reg_indirect_long;
 
-        sub_byte_reg,
-        sub_short_reg,
-        sub_long_reg,
+    handlers[Opcode::MoveAbsIndirectByte as usize] = move_abs_indirect_byte;
+    handlers[Opcode::MoveAbsIndirectShort as usize] = move_abs_indirect_short;
+    handlers[Opcode::MoveAbsIndirectLong as usize] = move_abs_indirect_long;
 
-        sub_borrow_byte_imm,
-        sub_borrow_short_imm,
-        sub_borrow_long_imm,
+    handlers[Opcode::MoveMemIndirectByte as usize] = move_mem_indirect_byte;
+    handlers[Opcode::MoveMemIndirectShort as usize] = move_mem_indirect_short;
+    handlers[Opcode::MoveMemIndirectLong as usize] = move_mem_indirect_long;
 
-        sub_borrow_byte_reg,
-        sub_borrow_short_reg,
-        sub_borrow_long_reg,
-        
-        mul_byte_imm,
-        mul_short_imm,
-        mul_long_imm,
+    handlers[Opcode::MoveIndirectIndirectByte as usize] = move_indirect_indirect_byte;
+    handlers[Opcode::MoveIndirectIndirectShort as usize] = move_indirect_indirect_short;
+    handlers[Opcode::MoveIndirectIndirectLong as usize] = move_indirect_indirect_long;
 
-        mul_byte_reg,
-        mul_short_reg,
-        mul_long_reg,
+    handlers[Opcode::AddByteImm as usize] = add_byte_imm;
+    handlers[Opcode::AddShortImm as usize] = add_short_imm;
+    handlers[Opcode::AddLongImm as usize] = add_long_imm;
 
-        div_byte_imm,
-        div_short_imm,
-        div_long_imm,
+    handlers[Opcode::AddByteReg as usize] = add_byte_reg;
+    handlers[Opcode::AddShortReg as usize] = add_short_reg;
+    handlers[Opcode::AddLongReg as usize] = add_long_reg;
 
-        div_byte_reg,
-        div_short_reg,
-        div_long_reg,
+    handlers[Opcode::AddCarryByteImm as usize] = add_carry_byte_imm;
+    handlers[Opcode::AddCarryShortImm as usize] = add_carry_short_imm;
+    handlers[Opcode::AddCarryLongImm as usize] = add_carry_long_imm;
 
-        signed_mul_byte_imm,
-        signed_mul_short_imm,
-        signed_mul_long_imm,
+    handlers[Opcode::AddCarryByteReg as usize] = add_carry_byte_reg;
+    handlers[Opcode::AddCarryShortReg as usize] = add_carry_short_reg;
+    handlers[Opcode::AddCarryLongReg as usize] = add_carry_long_reg;
 
-        signed_mul_byte_reg,
-        signed_mul_short_reg,
-        signed_mul_long_reg,
+    handlers[Opcode::SubByteImm as usize] = sub_byte_imm;
+    handlers[Opcode::SubShortImm as usize] = sub_short_imm;
+    handlers[Opcode::SubLongImm as usize] = sub_long_imm;
 
-        signed_div_byte_imm,
-        signed_div_short_imm,
-        signed_div_long_imm,
+    handlers[Opcode::SubByteReg as usize] = sub_byte_reg;
+    handlers[Opcode::SubShortReg as usize] = sub_short_reg;
+    handlers[Opcode::SubLongReg as usize] = sub_long_reg;
 
-        signed_div_byte_reg,
-        signed_div_short_reg,
-        signed_div_long_reg,
+    handlers[Opcode::SubBorrowByteImm as usize] = sub_borrow_byte_imm;
+    handlers[Opcode::SubBorrowShortImm as usize] = sub_borrow_short_imm;
+    handlers[Opcode::SubBorrowLongImm as usize] = sub_borrow_long_imm;
 
-        and_byte_imm,
-        and_short_imm,
-        and_long_imm,
+    handlers[Opcode::SubBorrowByteReg as usize] = sub_borrow_byte_reg;
+    handlers[Opcode::SubBorrowShortReg as usize] = sub_borrow_short_reg;
+    handlers[Opcode::SubBorrowLongReg as usize] = sub_borrow_long_reg;
 
-        and_byte_reg,
-        and_short_reg,
-        and_long_reg,
+    handlers[Opcode::MulByteImm as usize] = mul_byte_imm;
+    handlers[Opcode::MulShortImm as usize] = mul_short_imm;
+    handlers[Opcode::MulLongImm as usize] = mul_long_imm;
 
-        or_byte_imm,
-        or_short_imm,
-        or_long_imm,
+    handlers[Opcode::MulByteReg as usize] = mul_byte_reg;
+    handlers[Opcode::MulShortReg as usize] = mul_short_reg;
+    handlers[Opcode::MulLongReg as usize] = mul_long_reg;
 
-        or_byte_reg,
-        or_short_reg,
-        or_long_reg,
+    handlers[Opcode::DivByteImm as usize] = div_byte_imm;
+    handlers[Opcode::DivShortImm as usize] = div_short_imm;
+    handlers[Opcode::DivLongImm as usize] = div_long_imm;
 
-        xor_byte_imm,
-        xor_short_imm,
-        xor_long_imm,
+    handlers[Opcode::DivByteReg as usize] = div_byte_reg;
+    handlers[Opcode::DivShortReg as usize] = div_short_reg;
+    handlers[Opcode::DivLongReg as usize] = div_long_reg;
 
-        xor_byte_reg,
-        xor_short_reg,
-        xor_long_reg,
+    handlers[Opcode::SignedMulByteImm as usize] = signed_mul_byte_imm;
+    handlers[Opcode::SignedMulShortImm as usize] = signed_mul_short_imm;
+    handlers[Opcode::SignedMulLongImm as usize] = signed_mul_long_imm;
 
-        push_byte_imm,
-        push_short_imm,
-        push_long_imm,
+    handlers[Opcode::SignedMulByteReg as usize] = signed_mul_byte_reg;
+    handlers[Opcode::SignedMulShortReg as usize] = signed_mul_short_reg;
+    handlers[Opcode::SignedMulLongReg as usize] = signed_mul_long_reg;
 
-        push_byte_reg,
-        push_short_reg,
-        push_long_reg,
+    handlers[Opcode::SignedDivByteImm as usize] = signed_div_byte_imm;
+    handlers[Opcode::SignedDivShortImm as usize] = signed_div_short_imm;
+    handlers[Opcode::SignedDivLongImm as usize] = signed_div_long_imm;
 
-        compare_byte_imm,
-        compare_short_imm,
-        compare_long_imm,
+    handlers[Opcode::SignedDivByteReg as usize] = signed_div_byte_reg;
+    handlers[Opcode::SignedDivShortReg as usize] = signed_div_short_reg;
+    handlers[Opcode::SignedDivLongReg as usize] = signed_div_long_reg;
 
-        compare_byte_reg,
-        compare_short_reg,
-        compare_long_reg,
+    handlers[Opcode::AndByteImm as usize] = and_byte_imm;
+    handlers[Opcode::AndShortImm as usize] = and_short_imm;
+    handlers[Opcode::AndLongImm as usize] = and_long_imm;
 
-        log_shift_left_byte_imm,
-        log_shift_left_short_imm,
-        log_shift_left_long_imm,
+    handlers[Opcode::AndByteReg as usize] = and_byte_reg;
+    handlers[Opcode::AndShortReg as usize] = and_short_reg;
+    handlers[Opcode::AndLongReg as usize] = and_long_reg;
 
-        log_shift_left_byte_reg,
-        log_shift_left_short_reg,
-        log_shift_left_long_reg,
+    handlers[Opcode::OrByteImm as usize] = or_byte_imm;
+    handlers[Opcode::OrShortImm as usize] = or_short_imm;
+    handlers[Opcode::OrLongImm as usize] = or_long_imm;
 
-        log_shift_right_byte_imm,
-        log_shift_right_short_imm,
-        log_shift_right_long_imm,
+    handlers[Opcode::OrByteReg as usize] = or_byte_reg;
+    handlers[Opcode::OrShortReg as usize] = or_short_reg;
+    handlers[Opcode::OrLongReg as usize] = or_long_reg;
 
-        log_shift_right_byte_reg,
-        log_shift_right_short_reg,
-        log_shift_right_long_reg,
+    handlers[Opcode::XorByteImm as usize] = xor_byte_imm;
+    handlers[Opcode::XorShortImm as usize] = xor_short_imm;
+    handlers[Opcode::XorLongImm as usize] = xor_long_imm;
 
-        arith_shift_left_byte_imm,
-        arith_shift_left_short_imm,
-        arith_shift_left_long_imm,
+    handlers[Opcode::XorByteReg as usize] = xor_byte_reg;
+    handlers[Opcode::XorShortReg as usize] = xor_short_reg;
+    handlers[Opcode::XorLongReg as usize] = xor_long_reg;
 
-        arith_shift_left_byte_reg,
-        arith_shift_left_short_reg,
-        arith_shift_left_long_reg,
+    handlers[Opcode::PushByteImm as usize] = push_byte_imm;
+    handlers[Opcode::PushShortImm as usize] = push_short_imm;
+    handlers[Opcode::PushLongImm as usize] = push_long_imm;
 
-        arith_shift_right_byte_imm,
-        arith_shift_right_short_imm,
-        arith_shift_right_long_imm,
+    handlers[Opcode::PushByteReg as usize] = push_byte_reg;
+    handlers[Opcode::PushShortReg as usize] = push_short_reg;
+    handlers[Opcode::PushLongReg as usize] = push_long_reg;
 
-        arith_shift_right_byte_reg,
-        arith_shift_right_short_reg,
-        arith_shift_right_long_reg,
+    handlers[Opcode::CompareByteImm as usize] = compare_byte_imm;
+    handlers[Opcode::CompareShortImm as usize] = compare_short_imm;
+    handlers[Opcode::CompareLongImm as usize] = compare_long_imm;
 
-        rotate_left_byte_imm,
-        rotate_left_short_imm,
-        rotate_left_long_imm,
+    handlers[Opcode::CompareByteReg as usize] = compare_byte_reg;
+    handlers[Opcode::CompareShortReg as usize] = compare_short_reg;
+    handlers[Opcode::CompareLongReg as usize] = compare_long_reg;
 
-        rotate_left_byte_reg,
-        rotate_left_short_reg,
-        rotate_left_long_reg,
+    handlers[Opcode::LogShiftLeftByteImm as usize] = log_shift_left_byte_imm;
+    handlers[Opcode::LogShiftLeftShortImm as usize] = log_shift_left_short_imm;
+    handlers[Opcode::LogShiftLeftLongImm as usize] = log_shift_left_long_imm;
 
-        rotate_right_byte_imm,
-        rotate_right_short_imm,
-        rotate_right_long_imm,
+    handlers[Opcode::LogShiftLeftByteReg as usize] = log_shift_left_byte_reg;
+    handlers[Opcode::LogShiftLeftShortReg as usize] = log_shift_left_short_reg;
+    handlers[Opcode::LogShiftLeftLongReg as usize] = log_shift_left_long_reg;
 
-        rotate_right_byte_reg,
-        rotate_right_short_reg,
-        rotate_right_long_reg,
+    handlers[Opcode::LogShiftRightByteImm as usize] = log_shift_right_byte_imm;
+    handlers[Opcode::LogShiftRightShortImm as usize] = log_shift_right_short_imm;
+    handlers[Opcode::LogShiftRightLongImm as usize] = log_shift_right_long_imm;
 
-        pop_byte,
-        pop_short,
-        pop_long,
+    handlers[Opcode::LogShiftRightByteReg as usize] = log_shift_right_byte_reg;
+    handlers[Opcode::LogShiftRightShortReg as usize] = log_shift_right_short_reg;
+    handlers[Opcode::LogShiftRightLongReg as usize] = log_shift_right_long_reg;
 
-        negate_byte,
-        negate_short,
-        negate_long,
+    handlers[Opcode::ArithShiftLeftByteImm as usize] = arith_shift_left_byte_imm;
+    handlers[Opcode::ArithShiftLeftShortImm as usize] = arith_shift_left_short_imm;
+    handlers[Opcode::ArithShiftLeftLongImm as usize] = arith_shift_left_long_imm;
 
-        not_byte,
-        not_short,
-        not_long,
+    handlers[Opcode::ArithShiftLeftByteReg as usize] = arith_shift_left_byte_reg;
+    handlers[Opcode::ArithShiftLeftShortReg as usize] = arith_shift_left_short_reg;
+    handlers[Opcode::ArithShiftLeftLongReg as usize] = arith_shift_left_long_reg;
 
-        increment_byte,
-        increment_short,
-        increment_long,
+    handlers[Opcode::ArithShiftRightByteImm as usize] = arith_shift_right_byte_imm;
+    handlers[Opcode::ArithShiftRightShortImm as usize] = arith_shift_right_short_imm;
+    handlers[Opcode::ArithShiftRightLongImm as usize] = arith_shift_right_long_imm;
 
-        decrement_byte,
-        decrement_short,
-        decrement_long,
+    handlers[Opcode::ArithShiftRightByteReg as usize] = arith_shift_right_byte_reg;
+    handlers[Opcode::ArithShiftRightShortReg as usize] = arith_shift_right_short_reg;
+    handlers[Opcode::ArithShiftRightLongReg as usize] = arith_shift_right_long_reg;
 
-        jump_equal,
-        jump_not_equal,
-        jump_greater,
-        jump_greater_equal,
-        jump_less,
-        jump_less_equal,
-        jump_signed_greater,
-        jump_signed_greater_equal,
-        jump_signed_less,
-        jump_signed_less_equal,
-        jump_imm,
-        jump_reg,
+    handlers[Opcode::RotateLeftByteImm as usize] = rotate_left_byte_imm;
+    handlers[Opcode::RotateLeftShortImm as usize] = rotate_left_short_imm;
+    handlers[Opcode::RotateLeftLongImm as usize] = rotate_left_long_imm;
 
-        interrupt,
-        interrupt_return,
+    handlers[Opcode::RotateLeftByteReg as usize] = rotate_left_byte_reg;
+    handlers[Opcode::RotateLeftShortReg as usize] = rotate_left_short_reg;
+    handlers[Opcode::RotateLeftLongReg as usize] = rotate_left_long_reg;
 
-        call,
-        ret,
-        syscall,
-    
-        clear_carry,
-        nop,
-    ]
+    handlers[Opcode::RotateRightByteImm as usize] = rotate_right_byte_imm;
+    handlers[Opcode::RotateRightShortImm as usize] = rotate_right_short_imm;
+    handlers[Opcode::RotateRightLongImm as usize] = rotate_right_long_imm;
+
+    handlers[Opcode::RotateRightByteReg as usize] = rotate_right_byte_reg;
+    handlers[Opcode::RotateRightShortReg as usize] = rotate_right_short_reg;
+    handlers[Opcode::RotateRightLongReg as usize] = rotate_right_long_reg;
+
+    handlers[Opcode::PopByte as usize] = pop_byte;
+    handlers[Opcode::PopShort as usize] = pop_short;
+    handlers[Opcode::PopLong as usize] = pop_long;
+
+    handlers[Opcode::NegateByte as usize] = negate_byte;
+    handlers[Opcode::NegateShort as usize] = negate_short;
+    handlers[Opcode::NegateLong as usize] = negate_long;
+
+    handlers[Opcode::NotByte as usize] = not_byte;
+    handlers[Opcode::NotShort as usize] = not_short;
+    handlers[Opcode::NotLong as usize] = not_long;
+
+    handlers[Opcode::IncrementByte as usize] = increment_byte;
+    handlers[Opcode::IncrementShort as usize] = increment_short;
+    handlers[Opcode::IncrementLong as usize] = increment_long;
+
+    handlers[Opcode::DecrementByte as usize] = decrement_byte;
+    handlers[Opcode::DecrementShort as usize] = decrement_short;
+    handlers[Opcode::DecrementLong as usize] = decrement_long;
+
+    handlers[Opcode::JumpEqual as usize] = jump_equal;
+    handlers[Opcode::JumpNotEqual as usize] = jump_not_equal;
+    handlers[Opcode::JumpGreater as usize] = jump_greater;
+    handlers[Opcode::JumpGreaterEqual as usize] = jump_greater_equal;
+    handlers[Opcode::JumpLess as usize] = jump_less;
+    handlers[Opcode::JumpLessEqual as usize] = jump_less_equal;
+    handlers[Opcode::JumpSignedGreater as usize] = jump_signed_greater;
+    handlers[Opcode::JumpSignedGreaterEqual as usize] = jump_signed_greater_equal;
+    handlers[Opcode::JumpSignedLess as usize] = jump_signed_less;
+    handlers[Opcode::JumpSignedLessEqual as usize] = jump_signed_less_equal;
+    handlers[Opcode::JumpImm as usize] = jump_imm;
+    handlers[Opcode::JumpReg as usize] = jump_reg;
+
+    handlers[Opcode::Interrupt as usize] = interrupt;
+    handlers[Opcode::InterruptReturn as usize] = interrupt_return;
+
+    handlers[Opcode::Call as usize] = call;
+    handlers[Opcode::Return as usize] = ret;
+    handlers[Opcode::Syscall as usize] = syscall;
+
+    handlers[Opcode::ClearCarry as usize] = clear_carry;
+    handlers[Opcode::Nop as usize] = nop;
+
+    assert!(handlers.len() == 256);
+
+    handlers
 }
 impl Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -469,9 +414,10 @@ impl Debug for Cpu {
 }
 
 
-// General, Cycle, Load Program
+// General, Cycle, Load Program[OpcodeHandler; 256];
 impl Cpu {
-    const OPCODE_HANDLERS: [OpcodeHandler; Opcode::Nop as usize + 1] = get_opcode_handlers();
+    const OPCODE_HANDLERS: OpcodeHandlerArray = get_opcode_handlers();
+
     pub fn reg_index_to_str(index: &usize) -> &str {
         match index {
             0 => "rax",
