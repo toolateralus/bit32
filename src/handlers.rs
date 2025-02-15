@@ -1219,6 +1219,54 @@ pub fn decrement_long(cpu: &mut Cpu) {
     cpu.registers[reg] = val as u32;
 }
 
+pub fn read_byte(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("read byte from channel into register");
+}
+pub fn read_short(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("read short from channel into register");
+}
+pub fn read_long(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("read long from channel into register");
+}
+
+pub fn write_byte_imm(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _val = cpu.next_byte() as usize;
+    todo!("write byte from imm into channel");
+}
+pub fn write_short_imm(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _val = cpu.next_short() as usize;
+    todo!("write short from imm into channel");
+}
+pub fn write_long_imm(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _val = cpu.next_long() as usize;
+    todo!("write long from imm into channel");
+}
+
+pub fn write_byte_reg(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("write byte from reg into channel");
+}
+pub fn write_short_reg(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("write short from reg into channel");
+}
+pub fn write_long_reg(cpu: &mut Cpu) {
+    let _chan = cpu.next_byte() as usize;
+    let _reg = cpu.next_byte() as usize;
+    todo!("write long from reg into channel");
+}
+
 pub fn jump_equal(cpu: &mut Cpu) {
     let addr = cpu.next_long();
     let lhs = cpu.registers[0];
@@ -1347,13 +1395,6 @@ pub fn interrupt_return(cpu: &mut Cpu) {
 
     // pop return address
     let ret_addr = cpu.memory.long(cpu.sp());
-
-    // Debugging: Print the return address and stack pointer
-    println!(
-        "InterruptReturn: Popped return address {:08x} from stack pointer {:08x}",
-        ret_addr,
-        cpu.sp()
-    );
 
     cpu.inc_sp(4);
     cpu.registers[IP] = ret_addr;
