@@ -1,5 +1,4 @@
-
-use raylib::{color::Color, init, prelude::RaylibDraw, RaylibHandle, RaylibThread};
+use raylib::{color::Color, ffi::TraceLogLevel, init, prelude::RaylibDraw, RaylibHandle, RaylibThread};
 
 use crate::{
     cpu::Cpu,
@@ -39,7 +38,7 @@ impl GfxContext {
         Self {
             vga_buffer: [0; Cpu::VGA_BUFFER_LEN],
             cfg: None,
-            raylib: init().build(),
+            raylib: init().log_level(TraceLogLevel::LOG_NONE).build(),
         }
     }
 }
@@ -57,13 +56,14 @@ impl Hardware for GfxContext {
         todo!()
     }
 }
+
 impl GfxContext {
-       pub fn draw(&mut self) {
+    pub fn draw(&mut self) {
         let (ref mut window, ref thread) = self.raylib;
         let mut handle = window.begin_drawing(thread);
         let mut x = 0;
         let mut y = 0;
-        let buffer = self.vga_buffer;
+        let buffer = &self.vga_buffer;
         for chunk in buffer.chunks(2) {
             if chunk.len() == 2 {
                 let ch = chunk[0] as char;
@@ -81,4 +81,3 @@ impl GfxContext {
         }
     }
 }
-
