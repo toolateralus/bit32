@@ -1,4 +1,6 @@
-use raylib::{color::Color, ffi::TraceLogLevel, init, prelude::RaylibDraw, RaylibHandle, RaylibThread};
+use raylib::{
+    color::Color, ffi::TraceLogLevel, init, prelude::RaylibDraw, RaylibHandle, RaylibThread,
+};
 
 use crate::hardware::{Config, Hardware};
 
@@ -54,6 +56,11 @@ impl GPU {
 impl Hardware for GPU {
     fn init(&mut self, cfg: Config) {
         self.cfg = Some(cfg);
+        let mut i = 0;
+        for byte in self.vram.iter_mut() {
+            *byte = if i % 2 == 0 { b' ' } else { 0x70 };
+            i += 1;
+        }
     }
 
     fn read(&self) -> u8 {
@@ -67,21 +74,18 @@ impl Hardware for GPU {
                 self.instruction_buffer_ptr = 0;
                 match self.instruction_buffer[0] {
                     GPU::WRITE_BYTE => {
-                        let dest =
-                            self.instruction_buffer[1] as usize
+                        let dest = self.instruction_buffer[1] as usize
                             + ((self.instruction_buffer[2] as usize) << 8);
                         self.vram[dest] = self.instruction_buffer[3];
                     }
                     GPU::WRITE_SHORT => {
-                        let dest =
-                            self.instruction_buffer[1] as usize
+                        let dest = self.instruction_buffer[1] as usize
                             + ((self.instruction_buffer[2] as usize) << 8);
                         self.vram[dest + 0] = self.instruction_buffer[3];
                         self.vram[dest + 1] = self.instruction_buffer[4];
                     }
                     GPU::WRITE_LONG => {
-                        let dest =
-                            self.instruction_buffer[1] as usize
+                        let dest = self.instruction_buffer[1] as usize
                             + ((self.instruction_buffer[2] as usize) << 8);
                         self.vram[dest + 0] = self.instruction_buffer[3];
                         self.vram[dest + 1] = self.instruction_buffer[4];
