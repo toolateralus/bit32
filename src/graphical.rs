@@ -1,5 +1,10 @@
 use raylib::{
-    color::Color, ffi::{CloseWindow, TraceLogLevel, WindowShouldClose}, init, prelude::RaylibDraw, window::WindowState, RaylibHandle, RaylibThread
+    color::Color,
+    ffi::{CloseWindow, TraceLogLevel, WindowShouldClose},
+    init,
+    prelude::RaylibDraw,
+    window::WindowState,
+    RaylibHandle, RaylibThread,
 };
 
 use crate::hardware::{Config, Hardware};
@@ -69,48 +74,48 @@ impl Hardware for GPU {
     }
 
     fn write(&mut self, data: u8) {
-        if self.instruction_size != 0 {
-            if self.instruction_buffer_ptr == self.instruction_size {
-                self.instruction_size = 0;
-                self.instruction_buffer_ptr = 0;
-                match self.instruction_buffer[0] {
-                    GPU::WRITE_BYTE => {
-                        let dest = self.instruction_buffer[1] as usize
-                            + ((self.instruction_buffer[2] as usize) << 8);
-                        self.vram[dest] = self.instruction_buffer[3];
-                    }
-                    GPU::WRITE_SHORT => {
-                        let dest = self.instruction_buffer[1] as usize
-                            + ((self.instruction_buffer[2] as usize) << 8);
-                        self.vram[dest + 0] = self.instruction_buffer[3];
-                        self.vram[dest + 1] = self.instruction_buffer[4];
-                    }
-                    GPU::WRITE_LONG => {
-                        let dest = self.instruction_buffer[1] as usize
-                            + ((self.instruction_buffer[2] as usize) << 8);
-                        self.vram[dest + 0] = self.instruction_buffer[3];
-                        self.vram[dest + 1] = self.instruction_buffer[4];
-                        self.vram[dest + 2] = self.instruction_buffer[5];
-                        self.vram[dest + 3] = self.instruction_buffer[6];
-                    }
-                    _ => panic!("Unknown gpu instruction: {}", data),
-                }
-            } else {
-                self.instruction_buffer[self.instruction_buffer_ptr] = data;
-                self.instruction_buffer_ptr += 1;
-            }
-        } else {
+        self.instruction_buffer[self.instruction_buffer_ptr] = data;
+        self.instruction_buffer_ptr += 1;
+        if self.instruction_size == 0 {
             match data {
-                GPU::HLT => self.deinit(),
-                GPU::DRAW_VGA => self.draw(),
+                GPU::HLT => self.instruction_size = 1,
+                GPU::DRAW_VGA => self.instruction_size = 1,
                 GPU::WRITE_BYTE => self.instruction_size = 4,
                 GPU::WRITE_SHORT => self.instruction_size = 5,
                 GPU::WRITE_LONG => self.instruction_size = 7,
                 _ => panic!("Unknown gpu instruction: {}", data),
             }
         }
+        if self.instruction_buffer_ptr == self.instruction_size {
+            match self.instruction_buffer[0] {
+                GPU::HLT => self.deinit(),
+                GPU::DRAW_VGA => self.draw(),
+                GPU::WRITE_BYTE => {
+                    let dest = self.instruction_buffer[1] as usize
+                        + ((self.instruction_buffer[2] as usize) << 8);
+                    self.vram[dest] = self.instruction_buffer[3];
+                }
+                GPU::WRITE_SHORT => {
+                    let dest = self.instruction_buffer[1] as usize
+                        + ((self.instruction_buffer[2] as usize) << 8);
+                    self.vram[dest + 0] = self.instruction_buffer[3];
+                    self.vram[dest + 1] = self.instruction_buffer[4];
+                }
+                GPU::WRITE_LONG => {
+                    let dest = self.instruction_buffer[1] as usize
+                        + ((self.instruction_buffer[2] as usize) << 8);
+                    self.vram[dest + 0] = self.instruction_buffer[3];
+                    self.vram[dest + 1] = self.instruction_buffer[4];
+                    self.vram[dest + 2] = self.instruction_buffer[5];
+                    self.vram[dest + 3] = self.instruction_buffer[6];
+                }
+                _ => panic!("Unknown gpu instruction: {}", self.instruction_buffer[0]),
+            }
+            self.instruction_size = 0;
+            self.instruction_buffer_ptr = 0;
+        }
     }
-    
+
     fn deinit(&mut self) {
         unsafe {
             CloseWindow();
