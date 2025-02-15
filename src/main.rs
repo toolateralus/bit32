@@ -34,12 +34,14 @@ fn main() {
     } else if args.contains(&String::from("graphical")) {
         let cpu = Rc::new(RefCell::new(Cpu::new()));
         let gpu = Rc::new(RefCell::new(graphical::GPU::new()));
-        cpu.borrow_mut().hardware.push(gpu.clone());
         let cfg = Config {
             cpu: cpu.clone(),
             id: 0,
         };
         gpu.clone().borrow_mut().init(cfg);
+        let cpu = cpu.clone();
+        cpu.borrow_mut().hardware.push(gpu.clone());
+        cpu.borrow_mut().load_program_from_file(&file).unwrap();
         cpu.borrow_mut().run();
     } else {
         let mut cpu = Cpu::new();
