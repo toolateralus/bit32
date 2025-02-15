@@ -266,6 +266,22 @@ pub enum Opcode {
     RotateRightLongReg,
 
 
+    // Read
+    ReadByte,
+    ReadShort,
+    ReadLong,
+
+
+    // Write
+    WriteByteImm,
+    WriteShortImm,
+    WriteLongImm,
+
+    WriteByteReg,
+    WriteShortReg,
+    WriteLongReg,
+
+
     // Pop
     PopByte,
     PopShort,
@@ -347,10 +363,18 @@ impl Opcode {
             | Opcode::MoveRegRegLong
             | Opcode::MoveRegIndirectByte
             | Opcode::MoveRegIndirectShort
-            | Opcode::MoveRegIndirectLong => (1, 1),
+            | Opcode::MoveRegIndirectLong
+            | Opcode::ReadByte
+            | Opcode::ReadShort
+            | Opcode::ReadLong
+            | Opcode::WriteByteReg
+            | Opcode::WriteShortReg
+            | Opcode::WriteLongReg
+            | Opcode::WriteByteImm => (1, 1),
             // second arg short
             Opcode::MoveImmRegShort
-            | Opcode::MoveImmIndirectShort => (1, 2),
+            | Opcode::MoveImmIndirectShort
+            | Opcode::WriteShortImm => (1, 2),
             // second arg long
             Opcode::MoveImmRegLong
             | Opcode::MoveImmIndirectLong
@@ -365,7 +389,8 @@ impl Opcode {
             | Opcode::MoveAbsIndirectLong
             | Opcode::MoveMemIndirectByte
             | Opcode::MoveMemIndirectShort
-            | Opcode::MoveMemIndirectLong => (1, 4),
+            | Opcode::MoveMemIndirectLong
+            | Opcode::WriteLongImm => (1, 4),
 
             // first arg long
             // second arg byte            

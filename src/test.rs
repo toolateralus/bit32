@@ -1682,7 +1682,10 @@ mod tests {
             cpu.registers[IDT] = 1;
 
             cpu.load_program(&[
-                Opcode::Interrupt as u8,         // 0  ; int 0 
+                Opcode::Interrupt as u8,         // 0  ; int 0
+                Opcode::MoveImmRegByte as u8,
+                0,
+                10,
                 Opcode::InterruptReturn as u8,  // 1  ; iret
             ]);
 

@@ -364,6 +364,18 @@ pub const fn get_opcode_handlers() -> OpcodeHandlerArray {
     handlers[Opcode::JumpImm as usize] = jump_imm;
     handlers[Opcode::JumpReg as usize] = jump_reg;
 
+    handlers[Opcode::ReadByte as usize] = read_byte;
+    handlers[Opcode::ReadShort as usize] = read_short;
+    handlers[Opcode::ReadLong as usize] = read_long;
+
+    handlers[Opcode::WriteByteImm as usize] = write_byte_imm;
+    handlers[Opcode::WriteShortImm as usize] = write_short_imm;
+    handlers[Opcode::WriteLongImm as usize] = write_long_imm;
+
+    handlers[Opcode::WriteByteReg as usize] = write_byte_reg;
+    handlers[Opcode::WriteShortReg as usize] = write_short_reg;
+    handlers[Opcode::WriteLongReg as usize] = write_long_reg;
+
     handlers[Opcode::Interrupt as usize] = interrupt;
     handlers[Opcode::InterruptReturn as usize] = interrupt_return;
 
