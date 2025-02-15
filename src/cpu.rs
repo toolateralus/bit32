@@ -68,14 +68,17 @@ impl Memory {
         std::str::from_utf8(&bytes).map(|s| s.to_string())
     }
 
+    #[inline(always)]
     pub fn set_long(&mut self, addr: usize, value: u32) {
         self.set_short(addr, value as u16);
         self.set_short(addr + 2, (value >> 16) as u16);
     }
+    #[inline(always)]
     pub fn set_short(&mut self, addr: usize, value: u16) {
         self.set_byte(addr, value as u8);
         self.set_byte(addr + 1, (value >> 8) as u8);
     }
+    #[inline(always)]
     pub fn set_byte(&mut self, addr: usize, value: u8) {
         if self.buffer.len() <= addr {
             panic!("memory access out of bounds {addr}");
