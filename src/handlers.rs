@@ -803,6 +803,7 @@ pub fn and_long_imm(cpu: &mut Cpu) {
     let rhs = cpu.next_long();
     cpu.registers[0] = lhs & rhs;
 }
+
 pub fn and_byte_reg(cpu: &mut Cpu) {
     let lhs = (cpu.registers[0] & 0xFF) as u8;
     let index = cpu.next_byte() as usize;
@@ -837,6 +838,7 @@ pub fn or_long_imm(cpu: &mut Cpu) {
     let res = cpu.registers[0] as u32 | val;
     cpu.registers[0] = res as u32;
 }
+
 pub fn or_byte_reg(cpu: &mut Cpu) {
     let reg = cpu.next_byte() as usize;
     let val = cpu.registers[reg] as u8;
@@ -1137,19 +1139,19 @@ pub fn rotate_right_long_reg(cpu: &mut Cpu) {
 pub fn pop_byte(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.byte(cpu.sp());
-    cpu.registers[dest] = value as u32;
+    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
     cpu.inc_sp(1);
 }
 pub fn pop_short(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.short(cpu.sp());
-    cpu.registers[dest] = value as u32;
+    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
     cpu.inc_sp(2);
 }
 pub fn pop_long(cpu: &mut Cpu) {
     let dest = cpu.next_byte() as usize;
     let value = cpu.memory.long(cpu.sp());
-    cpu.registers[dest] = value as u32;
+    unsafe { *cpu.registers.get_unchecked_mut(dest) = value as u32; };
     cpu.inc_sp(4);
 }
 

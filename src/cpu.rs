@@ -87,10 +87,12 @@ impl Memory {
     }
 }
 
+pub type HardwareInterrupt = Box<dyn Fn(&mut Cpu) + Send + Sync>;
+
 pub struct Cpu {
     pub registers: [u32; NUM_REGISTERS],
     pub memory: Memory,
-    pub hardware_interrupt_routine: Option<Box<dyn Fn(&mut Cpu) + Send + Sync>>,
+    pub hardware_interrupt: Option<HardwareInterrupt>,
 }
 
 pub type OpcodeHandlerArray = [OpcodeHandler; 256];
@@ -482,10 +484,11 @@ impl Cpu {
     #[inline(always)]
     pub fn cycle(&mut self) {
         let flags = unsafe { self.registers.get_unchecked(FLAGS) };
+
         if flags & Cpu::INTERRUPT_FLAG == Cpu::INTERRUPT_FLAG {
-            if let Some(hw_interrupt) = self.hardware_interrupt_routine.take() {
+            if let Some(hw_interrupt) = self.hardware_interrupt.take() {
                 (hw_interrupt)(self);
-                self.hardware_interrupt_routine = None;
+                self.hardware_interrupt = None;
             }
         }
         let instruction = self.next_byte();
@@ -543,7 +546,7 @@ impl Cpu {
         let mut cpu = Cpu {
             registers: [0; NUM_REGISTERS],
             memory: Memory::new(),
-            hardware_interrupt_routine: None,
+            hardware_interrupt: None,
         };
 
         // TODO: remove this after testing.
@@ -596,29 +599,14 @@ impl Cpu {
     }
     #[inline(always)]
     pub fn dec_sp(&mut self, value: u32) {
-        if let Some(result) = self.registers[SP].checked_sub(value) {
-            self.registers[SP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("stack underflow.");
-        }
+        unsafe { *self.registers.get_unchecked_mut(SP) -= value; }
     }
     #[inline(always)]
     pub fn inc_sp(&mut self, value: u32) {
-        if let Some(result) = self.registers[SP].checked_add(value) {
-            self.registers[SP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("stack overflow.");
-        }
+        unsafe { *self.registers.get_unchecked_mut(SP) += value; } 
     }
     #[inline(always)]
     pub fn inc_ip(&mut self, value: u32) {
-        if let Some(result) = self.registers[IP].checked_add(value) {
-            self.registers[IP] = result;
-        } else {
-            println!("{:?}", self);
-            panic!("instruction pointer overflow.");
-        }
+        unsafe { *self.registers.get_unchecked_mut(IP) += value; }
     }
 }
