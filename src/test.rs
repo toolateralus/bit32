@@ -42,7 +42,6 @@ mod le_bytes_junk {
 
 #[cfg(test)]
 mod tests {
-
     mod stack {
         use crate::{
             cpu::{Cpu, SP},
@@ -158,7 +157,6 @@ mod tests {
             assert_eq!(cpu.sp(), expected_sp);
         }
     }
-
     mod general {
         use crate::cpu::Cpu;
 
@@ -172,7 +170,6 @@ mod tests {
             assert!(cpu.has_flag(Cpu::HALT_FLAG));
         }
     }
-
     mod add {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
@@ -745,7 +742,6 @@ mod tests {
             assert_eq!(cpu.registers[1], 0);
         }
     }
-
     mod jump {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
@@ -998,7 +994,6 @@ mod tests {
             assert_eq!(cpu.registers[crate::cpu::IP], jmp_addr);
         }
     }
-
     mod compare {
         use crate::{cpu::Cpu, opcodes::Opcode};
         #[test]
@@ -1104,7 +1099,6 @@ mod tests {
             assert_eq!(cpu.registers[0], 1);
         }
     }
-
     mod and {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
@@ -1165,7 +1159,6 @@ mod tests {
             assert_eq!(cpu.registers[0], 0xCCCC);
         }
     }
-
     mod or {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
@@ -1226,7 +1219,6 @@ mod tests {
             assert_eq!(cpu.registers[0], 0xFFFFFFFF);
         }
     }
-
     mod xor {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
@@ -1287,7 +1279,6 @@ mod tests {
             assert_eq!(cpu.registers[0], 0xAFAFAFAF);
         }
     }
-
     mod logical_shift {
         use crate::{cpu::Cpu, opcodes::Opcode};
 
@@ -1665,7 +1656,6 @@ mod tests {
             assert_eq!(cpu.ip(), 6)
         }
     }
-
     mod int {
         use crate::{
             cpu::{Cpu, FLAGS, IDT},
@@ -1682,11 +1672,11 @@ mod tests {
             cpu.registers[IDT] = 1;
 
             cpu.load_program(&[
-                Opcode::Interrupt as u8,         // 0  ; int 0
+                Opcode::Interrupt as u8, // 0  ; int 0
                 Opcode::MoveImmRegByte as u8,
                 0,
                 10,
-                Opcode::InterruptReturn as u8,  // 1  ; iret
+                Opcode::InterruptReturn as u8, // 1  ; iret
             ]);
 
             cpu.run();
@@ -1694,7 +1684,6 @@ mod tests {
             assert_eq!((cpu.registers[FLAGS] & Cpu::INTERRUPT_FLAG as u32), 0);
         }
     }
-
     mod mov {
         const SRC_VAL: u32 = 0xCAFEC0DE;
         const DST_REG: usize = 0;
@@ -2130,6 +2119,36 @@ mod tests {
                 let mut builder = TestBuilder::<u32>::new(Opcode::MoveIndirectIndirectLong);
                 builder.set_dst_ind().set_src_ind().run().assert_adr_eq();
             }
+        }
+    }
+    mod io {
+        use crate::{
+            cpu::Cpu,
+            graphical,
+            hardware::{Config, Hardware},
+            opcodes::Opcode,
+        };
+        use std::{cell::RefCell, rc::Rc};
+
+        #[test]
+        fn gpu() {
+            let cpu = Rc::new(RefCell::new(Cpu::new()));
+            cpu.borrow_mut().load_program(&[
+                Opcode::WriteByteImm as u8,
+                0,
+                1,
+                Opcode::WriteByteImm as u8,
+                0,
+                0,
+            ]);
+            let gpu = Rc::new(RefCell::new(graphical::GPU::new()));
+            cpu.borrow_mut().hardware.push(gpu.clone());
+            let cfg = Config {
+                cpu: cpu.clone(),
+                id: 0,
+            };
+            gpu.clone().borrow_mut().init(cfg);
+            cpu.borrow_mut().run();
         }
     }
 }

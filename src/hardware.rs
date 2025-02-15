@@ -20,6 +20,7 @@ pub struct Config {
 
 pub trait Hardware {
     fn init(&mut self, config: Config);
+    fn deinit(&mut self);
     fn read(&self) -> u8;
     fn write(&mut self, b: u8);
 }

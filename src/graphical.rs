@@ -1,5 +1,5 @@
 use raylib::{
-    color::Color, ffi::TraceLogLevel, init, prelude::RaylibDraw, RaylibHandle, RaylibThread,
+    color::Color, ffi::{CloseWindow, TraceLogLevel, WindowShouldClose}, init, prelude::RaylibDraw, window::WindowState, RaylibHandle, RaylibThread
 };
 
 use crate::hardware::{Config, Hardware};
@@ -15,10 +15,11 @@ pub struct GPU {
 
 impl GPU {
     const VRAM_SIZE: usize = 0x10000;
-    const DRAW_VGA: u8 = 0;
-    const WRITE_BYTE: u8 = 1;
-    const WRITE_SHORT: u8 = 2;
-    const WRITE_LONG: u8 = 3;
+    const HLT: u8 = 0;
+    const DRAW_VGA: u8 = GPU::HLT + 1;
+    const WRITE_BYTE: u8 = GPU::DRAW_VGA + 1;
+    const WRITE_SHORT: u8 = GPU::WRITE_BYTE + 1;
+    const WRITE_LONG: u8 = GPU::WRITE_SHORT + 1;
     pub fn vga_to_raylib_color(vga_color: u8) -> Color {
         match vga_color {
             0x0 => Color::BLACK,
@@ -100,12 +101,19 @@ impl Hardware for GPU {
             }
         } else {
             match data {
+                GPU::HLT => self.deinit(),
                 GPU::DRAW_VGA => self.draw(),
                 GPU::WRITE_BYTE => self.instruction_size = 4,
                 GPU::WRITE_SHORT => self.instruction_size = 5,
                 GPU::WRITE_LONG => self.instruction_size = 7,
                 _ => panic!("Unknown gpu instruction: {}", data),
             }
+        }
+    }
+    
+    fn deinit(&mut self) {
+        unsafe {
+            CloseWindow();
         }
     }
 }
