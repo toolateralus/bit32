@@ -936,7 +936,7 @@ mod tests {
             program.push(Opcode::JumpLessEqual as u8);
             let jmp_addr = 10 as u32;
             program.extend_from_slice(&jmp_addr.to_le_bytes());
-            let no_jmp_addr = program.len() as u32;
+            let _no_jmp_addr = program.len() as u32;
             cpu.load_program(program.as_slice());
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], jmp_addr);
@@ -979,7 +979,7 @@ mod tests {
             program.push(Opcode::JumpGreaterEqual as u8);
             let jmp_addr = 10 as u32;
             program.extend_from_slice(&jmp_addr.to_le_bytes());
-            let no_jmp_addr = program.len() as u32;
+            let _no_jmp_addr = program.len() as u32;
             cpu.load_program(program.as_slice());
             cpu.cycle();
             assert_eq!(cpu.registers[crate::cpu::IP], jmp_addr);

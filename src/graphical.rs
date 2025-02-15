@@ -1,7 +1,3 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread::{self, JoinHandle},
-};
 
 use raylib::{color::Color, init, prelude::RaylibDraw, RaylibHandle, RaylibThread};
 
@@ -57,7 +53,7 @@ impl Hardware for GfxContext {
         todo!()
     }
 
-    fn write<T: Numeric>(&mut self, b: T) {
+    fn write<T: Numeric>(&mut self, _b: T) {
         todo!()
     }
 }
