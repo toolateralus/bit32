@@ -76,11 +76,6 @@ impl GPU {
 impl Hardware for GPU {
     fn init(&mut self, cfg: Config) {
         self.cfg = Some(cfg);
-        let mut i = 0;
-        for byte in self.vram.iter_mut() {
-            *byte = if i % 2 == 0 { b' ' } else { 0x70 };
-            i += 1;
-        }
     }
 
     fn read(&self) -> u8 {
@@ -152,7 +147,10 @@ impl GPU {
         let mut handle = window.begin_drawing(thread);
         for chunk in buffer.chunks(2) {
             if chunk.len() == 2 {
-                let ch = chunk[0] as char;
+                let mut ch = chunk[0] as char;
+                if !ch.is_ascii_graphic() {
+                    ch = ' ';
+                }
                 let color = chunk[1];
                 let fg_color = GPU::vga_to_raylib_color(color & 0x0F);
                 let bg_color = GPU::vga_to_raylib_color((color >> 4) & 0x0F);
