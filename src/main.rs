@@ -42,7 +42,32 @@ fn main() {
         let cpu = cpu.clone();
         cpu.borrow_mut().hardware.push(gpu.clone());
         cpu.borrow_mut().load_program_from_file(&file).unwrap();
-        cpu.borrow_mut().run();
+        let start = Instant::now();
+        let mut cycles = 0;
+        while !cpu.borrow_mut().has_flag(Cpu::HALT_FLAG) {
+            cpu.borrow_mut().cycle();
+            cycles += 1;
+        }
+
+        let elapsed = start.elapsed();
+        let seconds = elapsed.as_secs_f64();
+        let clock_speed_hz = cycles as f64 / seconds;
+        if clock_speed_hz >= 1_000_000.0 {
+            println!(
+            "Average CPU clock speed: {:.2} Mhz",
+            clock_speed_hz / 1_000_000.0
+            );
+        } else if clock_speed_hz >= 1_000.0 {
+            println!(
+            "Average CPU clock speed: {:.2} Khz",
+            clock_speed_hz / 1_000.0
+            );
+        } else {
+            println!(
+            "Average CPU clock speed: {:.2} Hz",
+            clock_speed_hz
+            );
+        }
     } else {
         let mut cpu = Cpu::new();
         cpu.load_program_from_file(&file).unwrap();

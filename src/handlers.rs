@@ -9,6 +9,11 @@ use crate::{
 
 pub fn hlt(cpu: &mut Cpu) {
     cpu.set_flag(Cpu::HALT_FLAG, true);
+    
+    for hardware in cpu.hardware.iter() {
+        let hw = hardware.clone();
+        hw.borrow_mut().deinit();
+    }
 }
 
 pub fn move_imm_reg_byte(cpu: &mut Cpu) {
