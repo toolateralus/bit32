@@ -1,9 +1,10 @@
+
 use raylib::{
     color::Color,
-    ffi::{CloseWindow, TraceLogLevel, WindowShouldClose},
+    ffi::{CloseWindow, TraceLogLevel, Vector2},
     init,
     prelude::RaylibDraw,
-    window::WindowState,
+    text::WeakFont,
     RaylibHandle, RaylibThread,
 };
 
@@ -13,6 +14,7 @@ pub struct GPU {
     pub raylib: (RaylibHandle, RaylibThread),
     pub vram: [u8; GPU::VRAM_SIZE],
     pub cfg: Option<Config>,
+    font: WeakFont,
     instruction_size: usize,
     instruction_buffer_ptr: usize,
     instruction_buffer: [u8; 7],
@@ -48,13 +50,25 @@ impl GPU {
     }
 
     pub fn new() -> Self {
+        let mut raylib = init().log_level(TraceLogLevel::LOG_NONE).size(0, 0).resizable().title("bit32").vsync().build();
+        let (ref mut window, ref thread) = raylib;
+        let font = unsafe {
+            match window.load_font(
+                thread,
+                "/usr/share/fonts/truetype/ModernDOS/ModernDOS8x16.ttf",
+            ) {
+                Ok(font) => WeakFont::from_raw(font.to_raw()),
+                Err(_) => window.get_font_default(),
+            }
+        };
         Self {
             vram: [0; GPU::VRAM_SIZE],
             cfg: None,
-            raylib: init().log_level(TraceLogLevel::LOG_NONE).build(),
+            raylib,
             instruction_size: 0,
             instruction_buffer_ptr: 0,
             instruction_buffer: [0; 7],
+            font,
         }
     }
 }
@@ -126,18 +140,39 @@ impl Hardware for GPU {
 impl GPU {
     pub fn draw(&mut self) {
         let (ref mut window, ref thread) = self.raylib;
-        let mut handle = window.begin_drawing(thread);
         let mut x = 0;
         let mut y = 0;
+
         let buffer = &self.vram;
+        let width = window.get_screen_width() / 80;
+        let height = i32::min(window.get_screen_height() / 25, width * 2);
+        let font_size = height as f32;
+        let spacing = 0.0;
+
+        let mut handle = window.begin_drawing(thread);
         for chunk in buffer.chunks(2) {
             if chunk.len() == 2 {
                 let ch = chunk[0] as char;
                 let color = chunk[1];
                 let fg_color = GPU::vga_to_raylib_color(color & 0x0F);
                 let bg_color = GPU::vga_to_raylib_color((color >> 4) & 0x0F);
-                handle.draw_rectangle(x * 8, y * 16, 8, 16, bg_color);
-                handle.draw_text(&ch.to_string(), x * 8, y * 16, 16, fg_color);
+
+                handle.draw_rectangle(x * width, y * height, width, height, bg_color);
+
+                let position = Vector2 {
+                    x: (x * width) as f32,
+                    y: (y * height) as f32,
+                };
+
+                handle.draw_text_ex(
+                    &self.font,
+                    &ch.to_string(),
+                    position,
+                    font_size,
+                    spacing,
+                    fg_color,
+                );
+                
                 x += 1;
                 if x >= 80 {
                     x = 0;

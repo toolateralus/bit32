@@ -2124,7 +2124,7 @@ mod tests {
     mod io {
         use crate::{
             cpu::Cpu,
-            graphical,
+            gpu,
             hardware::{Config, Hardware},
             opcodes::Opcode,
         };
@@ -2141,7 +2141,7 @@ mod tests {
                 0,
                 0,
             ]);
-            let gpu = Rc::new(RefCell::new(graphical::GPU::new()));
+            let gpu = Rc::new(RefCell::new(gpu::GPU::new()));
             cpu.borrow_mut().hardware.push(gpu.clone());
             let cfg = Config {
                 cpu: cpu.clone(),

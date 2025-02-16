@@ -13,7 +13,7 @@ use debug::Debugger;
 pub mod cpu;
 pub mod debug;
 pub mod functions;
-pub mod graphical;
+pub mod gpu;
 pub mod handlers;
 pub mod hardware;
 pub mod opcodes;
@@ -33,7 +33,7 @@ fn main() {
         debugger.run(&file);
     } else if args.contains(&String::from("graphical")) {
         let cpu = Rc::new(RefCell::new(Cpu::new()));
-        let gpu = Rc::new(RefCell::new(graphical::GPU::new()));
+        let gpu = Rc::new(RefCell::new(gpu::GPU::new()));
         let cfg = Config {
             cpu: cpu.clone(),
             id: 0,
