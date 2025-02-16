@@ -1,3 +1,7 @@
+use std::{
+    sync::mpsc::{channel, Sender},
+    thread::{self, JoinHandle},
+};
 
 use raylib::{
     color::Color,
@@ -10,14 +14,20 @@ use raylib::{
 
 use crate::hardware::{Config, Hardware};
 
-pub struct GPU {
-    pub raylib: (RaylibHandle, RaylibThread),
-    pub vram: [u8; GPU::VRAM_SIZE],
-    pub cfg: Option<Config>,
+struct Core {
+    vram: [u8; GPU::VRAM_SIZE],
     font: WeakFont,
+    window: RaylibHandle,
+    thread: RaylibThread,
+}
+
+pub struct GPU {
+    thread_handle: Option<JoinHandle<()>>,
+    sender: Sender<[u8; 9]>,
+    pub cfg: Option<Config>,
     instruction_size: usize,
     instruction_buffer_ptr: usize,
-    instruction_buffer: [u8; 7],
+    instruction_buffer: [u8; 9],
 }
 
 impl GPU {
@@ -50,25 +60,68 @@ impl GPU {
     }
 
     pub fn new() -> Self {
-        let mut raylib = init().log_level(TraceLogLevel::LOG_NONE).size(0, 0).resizable().title("bit32").vsync().build();
-        let (ref mut window, ref thread) = raylib;
-        let font = unsafe {
-            match window.load_font(
+        let (sender, receiver) = channel::<[u8; 9]>();
+        let thread_handle = thread::spawn(move || {
+            let raylib = init()
+                .log_level(TraceLogLevel::LOG_NONE)
+                .size(0, 0)
+                .resizable()
+                .title("bit32")
+                .vsync()
+                .build();
+            let (mut window, thread) = raylib;
+            let font = unsafe {
+                match window.load_font(
+                    &thread,
+                    "/usr/share/fonts/truetype/ModernDOS/ModernDOS8x16.ttf",
+                ) {
+                    Ok(font) => WeakFont::from_raw(font.to_raw()),
+                    Err(_) => window.get_font_default(),
+                }
+            };
+            let mut core = Core {
+                vram: [0; GPU::VRAM_SIZE],
+                font,
+                window,
                 thread,
-                "/usr/share/fonts/truetype/ModernDOS/ModernDOS8x16.ttf",
-            ) {
-                Ok(font) => WeakFont::from_raw(font.to_raw()),
-                Err(_) => window.get_font_default(),
+            };
+            loop {
+                let msg = receiver
+                    .recv()
+                    .expect("Could not receive message in gpu thread");
+                match msg[0] {
+                    GPU::HLT => {
+                        core.deinit();
+                        return;
+                    }
+                    GPU::DRAW_VGA => core.draw(),
+                    GPU::WRITE_BYTE => {
+                        let dest = msg[1] as usize + ((msg[2] as usize) << 8);
+                        core.vram[dest] = msg[3];
+                    }
+                    GPU::WRITE_SHORT => {
+                        let dest = msg[1] as usize + ((msg[2] as usize) << 8);
+                        core.vram[dest + 0] = msg[3];
+                        core.vram[dest + 1] = msg[4];
+                    }
+                    GPU::WRITE_LONG => {
+                        let dest = msg[1] as usize + ((msg[2] as usize) << 8);
+                        core.vram[dest + 0] = msg[3];
+                        core.vram[dest + 1] = msg[4];
+                        core.vram[dest + 2] = msg[5];
+                        core.vram[dest + 3] = msg[6];
+                    }
+                    _ => panic!("Unknown gpu instruction: {}", msg[0]),
+                }
             }
-        };
+        });
         Self {
-            vram: [0; GPU::VRAM_SIZE],
+            thread_handle: Some(thread_handle),
+            sender,
             cfg: None,
-            raylib,
             instruction_size: 0,
             instruction_buffer_ptr: 0,
-            instruction_buffer: [0; 7],
-            font,
+            instruction_buffer: [0; 9],
         }
     }
 }
@@ -96,55 +149,37 @@ impl Hardware for GPU {
             }
         }
         if self.instruction_buffer_ptr == self.instruction_size {
-            match self.instruction_buffer[0] {
-                GPU::HLT => self.deinit(),
-                GPU::DRAW_VGA => self.draw(),
-                GPU::WRITE_BYTE => {
-                    let dest = self.instruction_buffer[1] as usize
-                        + ((self.instruction_buffer[2] as usize) << 8);
-                    self.vram[dest] = self.instruction_buffer[3];
-                }
-                GPU::WRITE_SHORT => {
-                    let dest = self.instruction_buffer[1] as usize
-                        + ((self.instruction_buffer[2] as usize) << 8);
-                    self.vram[dest + 0] = self.instruction_buffer[3];
-                    self.vram[dest + 1] = self.instruction_buffer[4];
-                }
-                GPU::WRITE_LONG => {
-                    let dest = self.instruction_buffer[1] as usize
-                        + ((self.instruction_buffer[2] as usize) << 8);
-                    self.vram[dest + 0] = self.instruction_buffer[3];
-                    self.vram[dest + 1] = self.instruction_buffer[4];
-                    self.vram[dest + 2] = self.instruction_buffer[5];
-                    self.vram[dest + 3] = self.instruction_buffer[6];
-                }
-                _ => panic!("Unknown gpu instruction: {}", self.instruction_buffer[0]),
-            }
+            self.sender
+                .send(self.instruction_buffer)
+                .expect("Could not send message to gpu thread");
             self.instruction_size = 0;
             self.instruction_buffer_ptr = 0;
         }
     }
 
     fn deinit(&mut self) {
-        unsafe {
-            CloseWindow();
+        self.sender
+            .send([0; 9])
+            .expect("Could not send message to gpu thread");
+        match self.thread_handle.take() {
+            Some(handle) => handle.join().expect("Failed to join GPU thread"),
+            None => panic!("Thread handle already taken"),
         }
     }
 }
 
-impl GPU {
+impl Core {
     pub fn draw(&mut self) {
-        let (ref mut window, ref thread) = self.raylib;
         let mut x = 0;
         let mut y = 0;
 
         let buffer = &self.vram;
-        let width = window.get_screen_width() / 80;
-        let height = i32::min(window.get_screen_height() / 25, width * 2);
+        let width = self.window.get_screen_width() / 80;
+        let height = i32::min(self.window.get_screen_height() / 25, width * 2);
         let font_size = height as f32;
         let spacing = 0.0;
 
-        let mut handle = window.begin_drawing(thread);
+        let mut handle = self.window.begin_drawing(&self.thread);
         for chunk in buffer.chunks(2) {
             if chunk.len() == 2 {
                 let mut ch = chunk[0] as char;
@@ -170,13 +205,18 @@ impl GPU {
                     spacing,
                     fg_color,
                 );
-                
+
                 x += 1;
                 if x >= 80 {
                     x = 0;
                     y += 1;
                 }
             }
+        }
+    }
+    pub fn deinit(&mut self) {
+        unsafe {
+            CloseWindow();
         }
     }
 }
