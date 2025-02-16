@@ -1,11 +1,11 @@
 use std::{
-    sync::mpsc::{channel, Sender},
+    sync::mpsc::{channel, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
 use raylib::{
     color::Color,
-    ffi::{CloseWindow, TraceLogLevel, Vector2},
+    ffi::{CloseWindow, TraceLogLevel, Vector2, WindowShouldClose},
     init,
     prelude::RaylibDraw,
     text::WeakFont,
@@ -24,6 +24,7 @@ struct Core {
 pub struct GPU {
     thread_handle: Option<JoinHandle<()>>,
     sender: Sender<[u8; 9]>,
+    receiver: Receiver<u8>,
     pub cfg: Option<Config>,
     instruction_size: usize,
     instruction_buffer_ptr: usize,
@@ -37,6 +38,7 @@ impl GPU {
     const WRITE_BYTE: u8 = GPU::DRAW_VGA + 1;
     const WRITE_SHORT: u8 = GPU::WRITE_BYTE + 1;
     const WRITE_LONG: u8 = GPU::WRITE_SHORT + 1;
+    const WINDOW_SHOULD_CLOSE: u8 = GPU::WRITE_LONG + 1;
     pub fn vga_to_raylib_color(vga_color: u8) -> Color {
         match vga_color {
             0x0 => Color::BLACK,
@@ -60,16 +62,16 @@ impl GPU {
     }
 
     pub fn new() -> Self {
-        let (sender, receiver) = channel::<[u8; 9]>();
+        let (interface_sender, core_receiver) = channel::<[u8; 9]>();
+        let (core_sender, interface_receiver) = channel::<u8>();
         let thread_handle = thread::spawn(move || {
-            let raylib = init()
+            let (mut window, thread) = init()
                 .log_level(TraceLogLevel::LOG_NONE)
                 .size(0, 0)
                 .resizable()
                 .title("bit32")
                 .vsync()
                 .build();
-            let (mut window, thread) = raylib;
             let font = unsafe {
                 match window.load_font(
                     &thread,
@@ -86,12 +88,14 @@ impl GPU {
                 thread,
             };
             loop {
-                let msg = receiver
+                let msg = core_receiver
                     .recv()
                     .expect("Could not receive message in gpu thread");
                 match msg[0] {
                     GPU::HLT => {
-                        core.deinit();
+                        unsafe {
+                            CloseWindow();
+                        }
                         return;
                     }
                     GPU::DRAW_VGA => core.draw(),
@@ -111,13 +115,17 @@ impl GPU {
                         core.vram[dest + 2] = msg[5];
                         core.vram[dest + 3] = msg[6];
                     }
+                    GPU::WINDOW_SHOULD_CLOSE => unsafe {
+                        core_sender.send(WindowShouldClose() as u8).expect("Couldn't send message from gpu thread")
+                    }
                     _ => panic!("Unknown gpu instruction: {}", msg[0]),
                 }
             }
         });
         Self {
             thread_handle: Some(thread_handle),
-            sender,
+            sender: interface_sender,
+            receiver: interface_receiver,
             cfg: None,
             instruction_size: 0,
             instruction_buffer_ptr: 0,
@@ -132,7 +140,9 @@ impl Hardware for GPU {
     }
 
     fn read(&self) -> u8 {
-        return 0;
+        self.receiver
+            .recv()
+            .expect("Could not receive message from gpu thread")
     }
 
     fn write(&mut self, data: u8) {
@@ -145,6 +155,7 @@ impl Hardware for GPU {
                 GPU::WRITE_BYTE => self.instruction_size = 4,
                 GPU::WRITE_SHORT => self.instruction_size = 5,
                 GPU::WRITE_LONG => self.instruction_size = 7,
+                GPU::WINDOW_SHOULD_CLOSE => self.instruction_size = 1,
                 _ => panic!("Unknown gpu instruction: {}", data),
             }
         }
@@ -174,8 +185,8 @@ impl Core {
         let mut y = 0;
 
         let buffer = &self.vram;
-        let width = self.window.get_screen_width() / 80;
-        let height = i32::min(self.window.get_screen_height() / 25, width * 2);
+        let height = i32::min(self.window.get_screen_height() / 25, self.window.get_screen_width() / 40);
+        let width = height / 2;
         let font_size = height as f32;
         let spacing = 0.0;
 
@@ -212,11 +223,6 @@ impl Core {
                     y += 1;
                 }
             }
-        }
-    }
-    pub fn deinit(&mut self) {
-        unsafe {
-            CloseWindow();
         }
     }
 }
